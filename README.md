@@ -96,6 +96,42 @@ npm run deploy:dev
 npm run deploy:prod
 ```
 
+### 初期データの投入
+
+デプロイ後、DynamoDB の Config テーブルに確認項目の初期データを投入する必要があります：
+
+```bash
+# 開発環境に初期データを投入
+cd infrastructure
+npm run setup-data:dev
+
+# 本番環境に初期データを投入
+npm run setup-data:prod
+
+# 既存データを強制上書き
+npm run setup-data:force
+
+# 現在の設定を確認
+npm run show-config
+```
+
+**PowerShell を使用する場合（Windows）:**
+
+```powershell
+# 開発環境に初期データを投入
+cd infrastructure
+.\scripts\setup-initial-data.ps1 dev
+
+# 本番環境に初期データを投入
+.\scripts\setup-initial-data.ps1 prod
+
+# 既存データを強制上書き
+.\scripts\setup-initial-data.ps1 dev -Force
+
+# 現在の設定を確認
+.\scripts\setup-initial-data.ps1 dev -Show
+```
+
 ### 手動デプロイ
 
 ```bash
@@ -105,9 +141,32 @@ npm run build
 npm run deploy
 
 # フロントエンドのビルドとデプロイ
-cd ../frontend
-npm run build
-# S3への静的サイトデプロイは CDK で自動実行されます
+npm run deploy-frontend:build
+```
+
+### フロントエンドのみデプロイ
+
+```bash
+# 開発環境にフロントエンドをデプロイ
+cd infrastructure
+npm run deploy-frontend:dev
+
+# 本番環境にフロントエンドをデプロイ
+npm run deploy-frontend:prod
+
+# 強制再ビルドしてデプロイ
+npm run deploy-frontend:build
+```
+
+**PowerShell を使用する場合（Windows）:**
+
+```powershell
+# 開発環境にフロントエンドをデプロイ
+cd infrastructure
+.\scripts\deploy-frontend.ps1 dev
+
+# 強制再ビルドしてデプロイ
+.\scripts\deploy-frontend.ps1 dev -Build
 ```
 
 ## 🧪 開発・テスト
@@ -208,6 +267,29 @@ jaws-festa-memory-upload/
 }
 ```
 
+## 🌐 CloudFront キャッシュ管理
+
+### キャッシュの無効化
+
+```bash
+# 全てのキャッシュを無効化
+cd infrastructure
+npm run cloudfront:invalidate
+
+# 特定のパスのみ無効化
+node scripts/cloudfront-cache-policy.js dev invalidate /index.html /assets/*
+
+# 無効化のステータス確認
+npm run cloudfront:status
+```
+
+### キャッシュ最適化のヒント
+
+```bash
+# キャッシュ最適化のベストプラクティスを表示
+npm run cloudfront:tips
+```
+
 ## 🔧 トラブルシューティング
 
 ### よくある問題
@@ -238,6 +320,21 @@ npx cdk diff
 
 # 強制的な再デプロイ
 npx cdk deploy --force
+```
+
+#### 5. フロントエンドデプロイエラー
+```bash
+# ビルドエラーの場合
+cd frontend
+npm ci
+npm run build
+
+# S3アップロードエラーの場合
+cd infrastructure
+npm run deploy-frontend:build
+
+# CloudFrontキャッシュが古い場合
+npm run cloudfront:invalidate
 ```
 
 ### ログの確認
