@@ -81,15 +81,24 @@
   - エンドポイント（/api/upload, /api/photos, /api/config）の定義
   - _Requirements: 5.4_
 
-- [ ] 5. React フロントエンドの基盤構築
-- [ ] 5.1 React プロジェクトのセットアップ
+- [x] 5. React フロントエンドの基盤構築
+
+
+
+
+
+- [x] 5.1 React プロジェクトのセットアップ
+
+
   - Vite + React + TypeScript プロジェクトの作成
   - Tailwind CSS の設定とインストール
   - React Router の設定
   - 基本的なプロジェクト構造の作成
   - _Requirements: 5.1_
 
-- [ ] 5.2 共通コンポーネントの実装
+- [x] 5.2 共通コンポーネントの実装
+
+
   - Layout コンポーネントの作成
   - Navigation コンポーネントの実装
   - Loading コンポーネントの作成
