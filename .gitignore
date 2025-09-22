@@ -138,8 +138,8 @@ Thumbs.db
 
 # Environment specific files
 config/local.json
-config/development.json
-config/production.json
+config/dev.json
+config/prod.json
 
 # Build artifacts
 *.tgz
