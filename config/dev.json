@@ -10,7 +10,8 @@
     "bucketName": "",
     "corsAllowedOrigins": [
       "http://localhost:3000",
-      "http://localhost:5173"
+      "http://localhost:5173",
+      "https://d13e8l3unbz1vd.cloudfront.net"
     ],
     "presignedUrlExpiry": "3600"
   },
@@ -27,7 +28,8 @@
   "apiGateway": {
     "corsAllowedOrigins": [
       "http://localhost:3000",
-      "http://localhost:5173"
+      "http://localhost:5173",
+      "https://d13e8l3unbz1vd.cloudfront.net"
     ],
     "corsAllowedMethods": [
       "GET",

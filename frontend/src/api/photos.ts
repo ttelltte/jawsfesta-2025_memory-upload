@@ -91,10 +91,14 @@ export const fetchPhotos = async (retryCount = 0): Promise<PhotosResponse> => {
     }
 
     // 成功レスポンスの場合
-    if (data.success && Array.isArray(data.photos)) {
-      return {
-        success: true,
-        photos: data.photos.map(validatePhoto).filter(Boolean) as Photo[]
+    if (data.success) {
+      // バックエンドのレスポンス形式に対応
+      const photos = data.data?.photos || data.photos || []
+      if (Array.isArray(photos)) {
+        return {
+          success: true,
+          photos: photos.map(validatePhoto).filter(Boolean) as Photo[]
+        }
       }
     }
 
