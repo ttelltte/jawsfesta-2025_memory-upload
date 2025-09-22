@@ -5,7 +5,7 @@ import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
-import * as iam from 'aws-cdk-lib/aws-iam';
+
 import { Construct } from 'constructs';
 import * as path from 'path';
 
@@ -43,7 +43,12 @@ export class MemoryUploadStack extends cdk.Stack {
       
       // パブリック読み取りアクセス設定
       publicReadAccess: true,
-      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ACLS,
+      blockPublicAccess: new s3.BlockPublicAccess({
+        blockPublicAcls: false,
+        blockPublicPolicy: false,
+        ignorePublicAcls: false,
+        restrictPublicBuckets: false,
+      }),
       
       // CORS設定（フロントエンドからのアクセス用）
       cors: [
@@ -234,17 +239,20 @@ export class MemoryUploadStack extends cdk.Stack {
       restApiName: `JAWS FESTA Memory Upload API (${environment})`,
       description: 'API for JAWS FESTA Memory Upload application',
       
-      // CORS設定
+      // CORS設定 - セキュリティを考慮した基本設定
       defaultCorsPreflightOptions: {
-        allowOrigins: apigateway.Cors.ALL_ORIGINS,
-        allowMethods: apigateway.Cors.ALL_METHODS,
-        allowHeaders: [
+        allowOrigins: config.apiGateway?.corsAllowedOrigins || 
+          (environment === 'prod' ? ['https://your-domain.com'] : apigateway.Cors.ALL_ORIGINS),
+        allowMethods: config.apiGateway?.corsAllowedMethods || ['GET', 'POST', 'OPTIONS'],
+        allowHeaders: config.apiGateway?.corsAllowedHeaders || [
           'Content-Type',
           'X-Amz-Date',
           'Authorization',
           'X-Api-Key',
           'X-Amz-Security-Token',
+          'X-Requested-With',
         ],
+        maxAge: cdk.Duration.seconds(86400), // 24時間キャッシュ
       },
       
       // バイナリメディアタイプ（画像アップロード用）
@@ -260,25 +268,56 @@ export class MemoryUploadStack extends cdk.Stack {
       deployOptions: {
         stageName: environment,
         loggingLevel: apigateway.MethodLoggingLevel.INFO,
-        dataTraceEnabled: true,
+        dataTraceEnabled: environment !== 'prod', // 本番環境では詳細ログを無効化
         metricsEnabled: true,
+        throttlingRateLimit: 100, // リクエスト制限
+        throttlingBurstLimit: 200,
       },
+      
+      // 失敗時の設定
+      failOnWarnings: false,
+      
+      // API キー設定（将来の拡張用）
+      apiKeySourceType: apigateway.ApiKeySourceType.HEADER,
     });
 
     // API リソースとメソッドの設定
-    const apiResource = this.api.root.addResource('api');
+    const apiResource = this.api.root.addResource('api', {
+      defaultCorsPreflightOptions: {
+        allowOrigins: config.apiGateway?.corsAllowedOrigins || 
+          (environment === 'prod' ? ['https://your-domain.com'] : apigateway.Cors.ALL_ORIGINS),
+        allowMethods: config.apiGateway?.corsAllowedMethods || ['GET', 'POST', 'OPTIONS'],
+        allowHeaders: config.apiGateway?.corsAllowedHeaders || [
+          'Content-Type',
+          'X-Amz-Date',
+          'Authorization',
+          'X-Api-Key',
+          'X-Amz-Security-Token',
+          'X-Requested-With',
+        ],
+      },
+    });
     
-    // /api/upload エンドポイント
+    // /api/upload エンドポイント - 画像アップロード用
     const uploadResource = apiResource.addResource('upload');
-    uploadResource.addMethod('POST', new apigateway.LambdaIntegration(this.uploadFunction));
+    uploadResource.addMethod('POST', new apigateway.LambdaIntegration(this.uploadFunction, {
+      // プロキシ統合を使用してシンプルに設定
+      proxy: true,
+    }));
     
-    // /api/photos エンドポイント
+    // /api/photos エンドポイント - 画像一覧取得用
     const photosResource = apiResource.addResource('photos');
-    photosResource.addMethod('GET', new apigateway.LambdaIntegration(this.listFunction));
+    photosResource.addMethod('GET', new apigateway.LambdaIntegration(this.listFunction, {
+      // プロキシ統合を使用してシンプルに設定
+      proxy: true,
+    }));
     
-    // /api/config エンドポイント
+    // /api/config エンドポイント - 確認項目設定取得用
     const configResource = apiResource.addResource('config');
-    configResource.addMethod('GET', new apigateway.LambdaIntegration(this.configFunction));
+    configResource.addMethod('GET', new apigateway.LambdaIntegration(this.configFunction, {
+      // プロキシ統合を使用してシンプルに設定
+      proxy: true,
+    }));
 
     // ===========================================
     // CloudFront Distribution

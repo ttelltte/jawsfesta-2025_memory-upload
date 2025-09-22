@@ -69,7 +69,12 @@
   - JSON レスポンス形式の実装
   - _Requirements: 3.1, 3.4_
 
-- [ ] 4. API Gateway の設定と統合
+- [x] 4. API Gateway の設定と統合
+
+
+
+
+
   - REST API の作成と設定
   - CORS 設定の実装
   - Lambda 関数との統合設定
