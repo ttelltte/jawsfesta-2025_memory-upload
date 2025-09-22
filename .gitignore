@@ -137,16 +137,10 @@ ehthumbs.db
 Thumbs.db
 
 # Environment specific files
+# Keep template config files but ignore local overrides
 config/local.json
-config/dev.json
-config/prod.json
+config/*-local.json
+config/.env*
 
-# Build artifacts
-*.tgz
-*.tar.gz
-
-# CDK Context
-cdk.context.json
-
-# Lambda deployment packages
-*.zip
+# Local uploads directory
+backend/uploads/
