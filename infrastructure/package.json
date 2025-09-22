@@ -9,13 +9,39 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "cdk": "cdk",
+    
     "deploy": "npm run build && cdk deploy",
-    "deploy:dev": "npm run build && cdk deploy --context environment=dev",
-    "deploy:prod": "npm run build && cdk deploy --context environment=prod",
+    "deploy:dev": "npm run build && cdk deploy --context environment=dev --profile default",
+    "deploy:prod": "npm run build && cdk deploy --context environment=prod --profile prod --require-approval never",
+    
     "diff": "npm run build && cdk diff",
+    "diff:dev": "npm run build && cdk diff --context environment=dev --profile default",
+    "diff:prod": "npm run build && cdk diff --context environment=prod --profile prod",
+    
     "synth": "npm run build && cdk synth",
+    "synth:dev": "npm run build && cdk synth --context environment=dev",
+    "synth:prod": "npm run build && cdk synth --context environment=prod",
+    
     "destroy": "cdk destroy",
-    "bootstrap": "cdk bootstrap"
+    "destroy:dev": "cdk destroy --context environment=dev --profile default",
+    "destroy:prod": "cdk destroy --context environment=prod --profile prod",
+    
+    "bootstrap": "cdk bootstrap",
+    "bootstrap:dev": "cdk bootstrap --profile default",
+    "bootstrap:prod": "cdk bootstrap --profile prod",
+    
+    "deploy-script:dev": "bash scripts/deploy-dev.sh",
+    "deploy-script:prod": "bash scripts/deploy-prod.sh",
+    "deploy-script:win": "powershell -ExecutionPolicy Bypass -File scripts/deploy.ps1",
+    
+    "setup:dev": "npm install && npm run bootstrap:dev && npm run deploy:dev",
+    "setup:prod": "npm install && npm run bootstrap:prod && npm run deploy:prod",
+    
+    "clean": "rm -rf lib/ cdk.out/ node_modules/ *.tsbuildinfo",
+    "clean:win": "rmdir /s /q lib cdk.out node_modules & del *.tsbuildinfo",
+    
+    "validate": "npm run build && npm run test && npm run synth:dev",
+    "validate:prod": "npm run build && npm run test && npm run synth:prod"
   },
   "devDependencies": {
     "@types/jest": "^29.5.14",

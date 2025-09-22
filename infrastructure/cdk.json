@@ -46,6 +46,21 @@
     "@aws-cdk/aws-cloudformation:parseTemplateByDefault": true,
     "@aws-cdk/aws-lambda:recognizeVersionProps": true,
     "@aws-cdk/aws-cloudformation:checkIntrinsicTypeHints": true,
-    "environment": "dev"
+    
+    "environment": "dev",
+    "project-name": "jaws-festa-memory-upload",
+    "aws-profile": "default",
+    "aws-region": "ap-northeast-1",
+    
+    "dev": {
+      "account": "",
+      "region": "ap-northeast-1",
+      "profile": "default"
+    },
+    "prod": {
+      "account": "",
+      "region": "ap-northeast-1", 
+      "profile": "prod"
+    }
   }
 }

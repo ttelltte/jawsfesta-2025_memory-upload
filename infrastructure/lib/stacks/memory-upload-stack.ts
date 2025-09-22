@@ -5,6 +5,7 @@ import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
+import * as iam from 'aws-cdk-lib/aws-iam';
 
 import { Construct } from 'constructs';
 import * as path from 'path';
@@ -181,11 +182,32 @@ export class MemoryUploadStack extends cdk.Stack {
       timeout: cdk.Duration.seconds(30),
       memorySize: 512,
       environment: {
+        // DynamoDB テーブル名
         PHOTOS_TABLE_NAME: this.photosTable.tableName,
         CONFIG_TABLE_NAME: this.configTable.tableName,
+        
+        // S3 バケット名
         PHOTOS_BUCKET_NAME: this.photosBucket.bucketName,
+        
+        // 環境設定
+        ENVIRONMENT: environment,
+        AWS_REGION: this.region,
+        
+        // アプリケーション設定
+        MAX_FILE_SIZE: config.upload?.maxFileSize || '10485760', // 10MB
+        ALLOWED_FILE_TYPES: config.upload?.allowedFileTypes || 'image/*',
+        TTL_DAYS: config.upload?.ttlDays || '30',
+        
+        // ログレベル
+        LOG_LEVEL: config.logging?.level || (environment === 'prod' ? 'WARN' : 'DEBUG'),
+        
+        // CORS設定
+        CORS_ALLOWED_ORIGINS: JSON.stringify(
+          config.apiGateway?.corsAllowedOrigins || 
+          (environment === 'prod' ? ['https://your-domain.com'] : ['*'])
+        ),
       },
-      description: 'Lambda function for handling image uploads',
+      description: `Lambda function for handling image uploads (${environment})`,
     });
 
     // List Lambda 関数
@@ -196,10 +218,30 @@ export class MemoryUploadStack extends cdk.Stack {
       timeout: cdk.Duration.seconds(30),
       memorySize: 256,
       environment: {
+        // DynamoDB テーブル名
         PHOTOS_TABLE_NAME: this.photosTable.tableName,
+        
+        // S3 バケット名
         PHOTOS_BUCKET_NAME: this.photosBucket.bucketName,
+        
+        // 環境設定
+        ENVIRONMENT: environment,
+        AWS_REGION: this.region,
+        
+        // アプリケーション設定
+        PRESIGNED_URL_EXPIRY: config.s3?.presignedUrlExpiry || '3600', // 1時間
+        MAX_ITEMS_PER_PAGE: config.pagination?.maxItemsPerPage || '50',
+        
+        // ログレベル
+        LOG_LEVEL: config.logging?.level || (environment === 'prod' ? 'WARN' : 'DEBUG'),
+        
+        // CORS設定
+        CORS_ALLOWED_ORIGINS: JSON.stringify(
+          config.apiGateway?.corsAllowedOrigins || 
+          (environment === 'prod' ? ['https://your-domain.com'] : ['*'])
+        ),
       },
-      description: 'Lambda function for retrieving photo list',
+      description: `Lambda function for retrieving photo list (${environment})`,
     });
 
     // Config Lambda 関数
@@ -210,26 +252,118 @@ export class MemoryUploadStack extends cdk.Stack {
       timeout: cdk.Duration.seconds(15),
       memorySize: 128,
       environment: {
+        // DynamoDB テーブル名
         CONFIG_TABLE_NAME: this.configTable.tableName,
+        
+        // 環境設定
+        ENVIRONMENT: environment,
+        AWS_REGION: this.region,
+        
+        // キャッシュ設定
+        CACHE_TTL: config.cache?.configTtl || '300', // 5分
+        
+        // ログレベル
+        LOG_LEVEL: config.logging?.level || (environment === 'prod' ? 'WARN' : 'DEBUG'),
+        
+        // CORS設定
+        CORS_ALLOWED_ORIGINS: JSON.stringify(
+          config.apiGateway?.corsAllowedOrigins || 
+          (environment === 'prod' ? ['https://your-domain.com'] : ['*'])
+        ),
       },
-      description: 'Lambda function for retrieving configuration',
+      description: `Lambda function for retrieving configuration (${environment})`,
     });
 
     // ===========================================
-    // IAM 権限設定
+    // IAM 権限設定（最小権限の原則）
     // ===========================================
     
     // Upload Lambda の権限
-    this.photosBucket.grantReadWrite(this.uploadFunction);
+    // S3: 画像アップロード用の最小権限（imagesフォルダのみ）
+    this.photosBucket.grantPut(this.uploadFunction, 'images/*');
+    this.photosBucket.grantPutAcl(this.uploadFunction, 'images/*');
+    
+    // DynamoDB: Photos テーブルへの書き込み権限
     this.photosTable.grantWriteData(this.uploadFunction);
+    
+    // DynamoDB: Config テーブルからの読み取り権限
     this.configTable.grantReadData(this.uploadFunction);
 
+    // 追加のIAMポリシー: Upload Lambda用
+    this.uploadFunction.addToRolePolicy(new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      actions: [
+        's3:PutObject',
+        's3:PutObjectAcl',
+      ],
+      resources: [
+        `${this.photosBucket.bucketArn}/images/*`,
+      ],
+      conditions: {
+        StringEquals: {
+          's3:x-amz-server-side-encryption': 'AES256',
+        },
+        NumericLessThan: {
+          's3:max-keys': '1',
+        },
+      },
+    }));
+
     // List Lambda の権限
-    this.photosBucket.grantRead(this.listFunction);
+    // S3: 画像読み取り用の最小権限（Presigned URL生成用）
+    this.photosBucket.grantRead(this.listFunction, 'images/*');
+    
+    // DynamoDB: Photos テーブルからの読み取り権限（GSI含む）
     this.photosTable.grantReadData(this.listFunction);
 
+    // 追加のIAMポリシー: List Lambda用（Presigned URL生成）
+    this.listFunction.addToRolePolicy(new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      actions: [
+        's3:GetObject',
+      ],
+      resources: [
+        `${this.photosBucket.bucketArn}/images/*`,
+      ],
+    }));
+
     // Config Lambda の権限
+    // DynamoDB: Config テーブルからの読み取り権限のみ
     this.configTable.grantReadData(this.configFunction);
+
+    // 追加のIAMポリシー: Config Lambda用（特定のアイテムのみ読み取り）
+    this.configFunction.addToRolePolicy(new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      actions: [
+        'dynamodb:GetItem',
+        'dynamodb:Query',
+      ],
+      resources: [
+        this.configTable.tableArn,
+      ],
+      conditions: {
+        ForAllValues:StringEquals: {
+          'dynamodb:Attributes': ['PK', 'SK', 'items', 'updatedAt'],
+        },
+      },
+    }));
+
+    // CloudWatch Logs権限（全Lambda関数共通）
+    const cloudWatchLogsPolicy = new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      actions: [
+        'logs:CreateLogGroup',
+        'logs:CreateLogStream',
+        'logs:PutLogEvents',
+      ],
+      resources: [
+        `arn:aws:logs:${this.region}:${this.account}:log-group:/aws/lambda/*`,
+      ],
+    });
+
+    this.uploadFunction.addToRolePolicy(cloudWatchLogsPolicy);
+    this.listFunction.addToRolePolicy(cloudWatchLogsPolicy);
+    this.configFunction.addToRolePolicy(cloudWatchLogsPolicy);
 
     // ===========================================
     // API Gateway

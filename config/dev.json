@@ -3,25 +3,31 @@
   "environment": "dev",
   "region": "ap-northeast-1",
   "account": "",
+  "profile": "default",
   "domainName": "",
   "certificateArn": "",
+  
   "s3": {
     "bucketName": "",
     "corsAllowedOrigins": [
       "http://localhost:3000",
       "http://localhost:5173"
-    ]
+    ],
+    "presignedUrlExpiry": "3600"
   },
+  
   "dynamodb": {
     "photosTableName": "",
     "configTableName": "",
     "ttlDays": 30
   },
+  
   "lambda": {
     "runtime": "nodejs18.x",
     "timeout": 30,
     "memorySize": 256
   },
+  
   "apiGateway": {
     "corsAllowedOrigins": [
       "http://localhost:3000",
@@ -37,17 +43,39 @@
       "X-Amz-Date",
       "Authorization",
       "X-Api-Key",
-      "X-Amz-Security-Token"
+      "X-Amz-Security-Token",
+      "X-Requested-With"
     ]
   },
+  
   "cloudfront": {
     "priceClass": "PriceClass_100",
     "cachePolicyId": "4135ea2d-6df8-44a3-9df3-4b5a84be39ad"
   },
+  
+  "upload": {
+    "maxFileSize": "10485760",
+    "allowedFileTypes": "image/*",
+    "ttlDays": "30"
+  },
+  
+  "pagination": {
+    "maxItemsPerPage": "50"
+  },
+  
+  "cache": {
+    "configTtl": "300"
+  },
+  
+  "logging": {
+    "level": "DEBUG"
+  },
+  
   "tags": {
     "Project": "JawsFestaMemoryUpload",
     "Environment": "dev",
     "Owner": "JAWS-UG",
-    "CostCenter": "Development"
+    "CostCenter": "Development",
+    "Repository": "jaws-festa-memory-upload"
   }
 }
