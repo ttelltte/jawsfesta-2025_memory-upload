@@ -142,5 +142,6 @@ config/local.json
 config/*-local.json
 config/.env*
 
-# Local uploads directory
-backend/uploads/
+# Local uploads directory (keep .gitkeep for directory structure)
+backend/uploads/*
+!backend/uploads/.gitkeep
