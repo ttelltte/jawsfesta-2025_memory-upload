@@ -9,7 +9,7 @@ describe('MemoryUploadStack', () => {
 
   beforeEach(() => {
     app = new cdk.App();
-    
+
     const mockConfig = {
       stackName: 'TestStack',
       environment: 'test',
