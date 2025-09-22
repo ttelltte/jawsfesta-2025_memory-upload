@@ -40,12 +40,12 @@ export const uploadImage = async (
     // FormDataを作成
     const formData = new FormData()
     formData.append('image', request.file)
-    formData.append('uploaderName', request.uploaderName || 'Anonymous')
+    formData.append('name', request.uploaderName || '')
     formData.append('comment', request.comment || '')
     formData.append('checkedItems', JSON.stringify(request.checkedItems))
 
     // API URLを取得
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001'
     
     // XMLHttpRequestを使用してアップロード進捗を監視
     return new Promise((resolve, reject) => {
@@ -68,11 +68,19 @@ export const uploadImage = async (
       // 完了時の処理
       xhr.addEventListener('load', () => {
         try {
+          console.log('アップロードレスポンス:', {
+            status: xhr.status,
+            statusText: xhr.statusText,
+            responseText: xhr.responseText
+          })
+          
           if (xhr.status >= 200 && xhr.status < 300) {
             const response: UploadResponse = JSON.parse(xhr.responseText)
+            console.log('アップロード成功:', response)
             resolve(response)
           } else {
             // HTTPエラーの場合
+            console.error('HTTPエラー:', xhr.status, xhr.statusText)
             let errorResponse: UploadResponse
             try {
               const serverResponse = JSON.parse(xhr.responseText)

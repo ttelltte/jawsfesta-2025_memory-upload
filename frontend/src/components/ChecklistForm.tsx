@@ -112,6 +112,34 @@ export const ChecklistForm: React.FC<ChecklistFormProps> = ({
         </ul>
       </div>
 
+      {/* 一括チェック機能 */}
+      {checklistItems.length > 0 && (
+        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border">
+          <span className="text-sm font-medium text-gray-700">全ての項目に同意する</span>
+          <button
+            type="button"
+            onClick={() => {
+              const allChecked = checklistItems.every(item => checkedItems[item.id])
+              const newState: Record<string, boolean> = {}
+              checklistItems.forEach(item => {
+                newState[item.id] = !allChecked
+              })
+              setCheckedItems(newState)
+            }}
+            disabled={disabled}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              disabled
+                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                : checklistItems.every(item => checkedItems[item.id])
+                  ? 'bg-red-500 text-white hover:bg-red-600'
+                  : 'bg-blue-500 text-white hover:bg-blue-600'
+            }`}
+          >
+            {checklistItems.every(item => checkedItems[item.id]) ? '全て解除' : '全て同意'}
+          </button>
+        </div>
+      )}
+
       {/* 確認項目チェックリスト */}
       <div className="space-y-3">
         {checklistItems.map((item) => {

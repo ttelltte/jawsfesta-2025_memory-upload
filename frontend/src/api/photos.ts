@@ -21,7 +21,7 @@ export interface PhotosResponse {
   }
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
 
 /**
  * 画像一覧を取得する
@@ -45,7 +45,7 @@ export const fetchPhotos = async (retryCount = 0): Promise<PhotosResponse> => {
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 30000) // 30秒でタイムアウト
 
-    const response = await fetch(`${API_BASE_URL}/photos`, {
+    const response = await fetch(`${API_BASE_URL}/api/photos`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

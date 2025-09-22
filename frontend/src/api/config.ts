@@ -24,8 +24,8 @@ export interface ConfigResponse {
  */
 export const fetchChecklistConfig = async (): Promise<ChecklistItem[]> => {
   try {
-    // TODO: 実際のAPI URLは環境変数から取得するように後で修正
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+    // 環境変数からAPI URLを取得
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001'
     const response = await fetch(`${apiUrl}/api/config`)
     
     if (!response.ok) {

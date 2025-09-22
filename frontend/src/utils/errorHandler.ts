@@ -266,14 +266,14 @@ export const getErrorCodeFromStatus = (status: number): string => {
  * エラーログを出力（開発環境のみ）
  */
 export const logError = (error: AppError, context?: string) => {
-  if (import.meta.env.DEV) {
-    console.group(`🚨 Error ${context ? `in ${context}` : ''}`)
-    console.error('Code:', error.code)
-    console.error('Message:', error.message)
-    console.error('Timestamp:', new Date(error.timestamp).toISOString())
-    if (error.details) {
-      console.error('Details:', error.details)
-    }
-    console.groupEnd()
+  // デバッグ用に常にエラーを表示
+  console.group(`🚨 Error ${context ? `in ${context}` : ''}`)
+  console.error('Code:', error.code)
+  console.error('Message:', error.message)
+  console.error('Timestamp:', new Date(error.timestamp).toISOString())
+  if (error.details) {
+    console.error('Details:', error.details)
   }
+  console.error('Full Error Object:', error)
+  console.groupEnd()
 }

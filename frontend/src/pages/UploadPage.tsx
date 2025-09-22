@@ -201,7 +201,7 @@ export const UploadPage: React.FC = () => {
         )}
 
         {/* アップロード進捗 */}
-        {uploadProgress && selectedImage && (
+        {uploadProgress && selectedImage && isSubmitting && (
           <div className="mb-6">
             <UploadProgress
               progress={uploadProgress}
@@ -228,7 +228,7 @@ export const UploadPage: React.FC = () => {
                 onSubmit={handleMetadataSubmit}
                 isSubmitting={isSubmitting}
                 error={error}
-                disabled={!checklistValid || isSubmitting}
+                disabled={isSubmitting}
               />
             </div>
             
