@@ -23,7 +23,12 @@
   - CDK コンテキスト設定（cdk.json）の作成
   - _Requirements: 5.1, 5.2_
 
-- [ ] 2. CDK インフラストラクチャの基盤実装
+- [x] 2. CDK インフラストラクチャの基盤実装
+
+
+
+
+
   - CDK Stack クラスの作成
   - DynamoDB テーブル（Photos, Config）の定義
   - S3 バケット（静的サイト + 画像保存）の作成
