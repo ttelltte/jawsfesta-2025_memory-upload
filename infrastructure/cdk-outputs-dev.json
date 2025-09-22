@@ -1,0 +1,20 @@
+{
+  "JawsFestaMemoryUploadDev": {
+    "CloudFrontDistributionId": "E2B3V7FM1IT2W2",
+    "WebsiteUrl": "https://d13e8l3unbz1vd.cloudfront.net",
+    "PhotosBucketWebsiteUrl": "http://jawsfestamemoryuploaddev-photosbucket2ac9d1f0-dsxgalzcz168.s3-website-ap-northeast-1.amazonaws.com",
+    "CloudFrontDomainName": "d13e8l3unbz1vd.cloudfront.net",
+    "PhotosTableName": "JawsFestaMemoryUploadDev-PhotosTable7E3E5302-1V7XKWAQ1E1XX",
+    "ApiGatewayUrl": "https://z508wunfnl.execute-api.ap-northeast-1.amazonaws.com/dev/",
+    "UploadFunctionName": "JawsFestaMemoryUploadDev-UploadFunction18838DD8-FvvpOEf7whqz",
+    "MemoryUploadApiEndpoint967F7563": "https://z508wunfnl.execute-api.ap-northeast-1.amazonaws.com/dev/",
+    "ConfigFunctionName": "JawsFestaMemoryUploadDev-ConfigFunctionC994C47F-YnFAV4Bt4r1O",
+    "Environment": "dev",
+    "Region": "ap-northeast-1",
+    "ConfigTableName": "JawsFestaMemoryUploadDev-ConfigTable5CD72349-NHGDDZSNQTN3",
+    "ApiGatewayId": "z508wunfnl",
+    "PhotosBucketName": "jawsfestamemoryuploaddev-photosbucket2ac9d1f0-dsxgalzcz168",
+    "StackName": "JawsFestaMemoryUploadDev",
+    "ListFunctionName": "JawsFestaMemoryUploadDev-ListFunction7F4B561E-m9hsFgkeZEQr"
+  }
+}
