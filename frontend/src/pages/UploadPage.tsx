@@ -1,8 +1,8 @@
 import React, { useState } from 'react'
-import { ImageUpload, MetadataForm, ChecklistForm, ConfirmationDialog, UploadProgress, SuccessMessage, type MetadataFormData } from '../components'
-import { validateFile } from '../utils'
+import { ImageUpload, MetadataForm, ChecklistForm, ConfirmationDialog, UploadProgress, UploadSuccessMessage, ErrorMessage, type MetadataFormData } from '../components'
+import { validateFile, normalizeError, logError } from '../utils'
 import { fetchChecklistConfig, type ChecklistItem } from '../api/config'
-import { uploadImage, type UploadProgress as UploadProgressType } from '../api/upload'
+import { uploadImage, canUpload, type UploadProgress as UploadProgressType } from '../api/upload'
 
 export const UploadPage: React.FC = () => {
   const [selectedImage, setSelectedImage] = useState<File | null>(null)
@@ -18,6 +18,7 @@ export const UploadPage: React.FC = () => {
   const [checklistItems, setChecklistItems] = useState<ChecklistItem[]>([])
   const [uploadProgress, setUploadProgress] = useState<UploadProgressType | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
+  const [uploadError, setUploadError] = useState<unknown>(null)
 
   const handleImageSelect = (file: File | null) => {
     if (!file) {
@@ -58,6 +59,8 @@ export const UploadPage: React.FC = () => {
         const items = await fetchChecklistConfig()
         setChecklistItems(items)
       } catch (error) {
+        const normalizedError = normalizeError(error)
+        logError(normalizedError, 'loadChecklistItems')
         console.error('確認項目の取得に失敗:', error)
       }
     }
@@ -82,12 +85,20 @@ export const UploadPage: React.FC = () => {
   const handleConfirmUpload = async () => {
     if (!selectedImage || !pendingMetadata) return
 
+    // アップロード可能かチェック
+    const uploadCheck = canUpload()
+    if (!uploadCheck.canUpload) {
+      setError(uploadCheck.reason || 'アップロードできません')
+      return
+    }
+
     setShowConfirmDialog(false)
     setIsSubmitting(true)
     setError(null)
     setChecklistError(null)
     setSuccessMessage(null)
     setUploadProgress(null)
+    setUploadError(null)
 
     try {
       // アップロード処理を実行
@@ -105,7 +116,7 @@ export const UploadPage: React.FC = () => {
 
       if (response.success && response.data) {
         // 成功時の処理
-        setSuccessMessage('画像のアップロードが完了しました！他の参加者と思い出を共有できます。')
+        setSuccessMessage(selectedImage.name)
         
         // フォームをリセット
         setSelectedImage(null)
@@ -118,14 +129,18 @@ export const UploadPage: React.FC = () => {
         
       } else {
         // エラー時の処理
-        const errorMessage = response.error?.message || 'アップロードに失敗しました'
-        setError(errorMessage)
+        const error = response.error || { code: 'UPLOAD_ERROR', message: 'アップロードに失敗しました' }
+        setUploadError(error)
         setUploadProgress(null)
+        
+        // エラーログ出力
+        logError(normalizeError(error), 'handleConfirmUpload')
       }
       
     } catch (err) {
-      console.error('アップロードエラー:', err)
-      setError('ネットワークエラーが発生しました。しばらく待ってから再試行してください。')
+      const normalizedError = normalizeError(err)
+      logError(normalizedError, 'handleConfirmUpload')
+      setUploadError(normalizedError)
       setUploadProgress(null)
     } finally {
       setIsSubmitting(false)
@@ -141,6 +156,19 @@ export const UploadPage: React.FC = () => {
     setSuccessMessage(null)
   }
 
+  const handleViewGallery = () => {
+    window.location.href = '/gallery'
+  }
+
+  const handleRetryUpload = () => {
+    setUploadError(null)
+    setError(null)
+    // 確認ダイアログを再表示
+    if (selectedImage && pendingMetadata) {
+      setShowConfirmDialog(true)
+    }
+  }
+
   return (
     <div className="max-w-2xl mx-auto">
       <h1 className="text-3xl font-bold text-center text-gray-800 mb-8">
@@ -151,11 +179,22 @@ export const UploadPage: React.FC = () => {
         {/* 成功メッセージ */}
         {successMessage && (
           <div className="mb-6">
-            <SuccessMessage
-              message={successMessage}
+            <UploadSuccessMessage
+              fileName={successMessage}
+              onViewGallery={handleViewGallery}
               onClose={handleCloseSuccessMessage}
-              autoClose={true}
-              autoCloseDelay={8000}
+            />
+          </div>
+        )}
+
+        {/* アップロードエラーメッセージ */}
+        {uploadError && (
+          <div className="mb-6">
+            <ErrorMessage
+              error={uploadError}
+              showRetry={true}
+              onRetry={handleRetryUpload}
+              onDismiss={() => setUploadError(null)}
             />
           </div>
         )}

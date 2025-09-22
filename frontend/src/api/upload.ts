@@ -1,4 +1,5 @@
 // Upload API クライアント
+import { normalizeError, ERROR_CODES, getErrorCodeFromStatus, logError } from '../utils/errorHandler'
 
 export interface UploadRequest {
   file: File
@@ -74,35 +75,59 @@ export const uploadImage = async (
             // HTTPエラーの場合
             let errorResponse: UploadResponse
             try {
-              errorResponse = JSON.parse(xhr.responseText)
+              const serverResponse = JSON.parse(xhr.responseText)
+              errorResponse = {
+                success: false,
+                error: {
+                  code: serverResponse.error?.code || getErrorCodeFromStatus(xhr.status),
+                  message: serverResponse.error?.message || `サーバーエラーが発生しました (${xhr.status})`,
+                  details: serverResponse.error?.details
+                }
+              }
             } catch {
               errorResponse = {
                 success: false,
                 error: {
-                  code: 'HTTP_ERROR',
-                  message: `サーバーエラーが発生しました (${xhr.status})`
+                  code: getErrorCodeFromStatus(xhr.status),
+                  message: getErrorMessageFromStatus(xhr.status)
                 }
               }
             }
+            
+            // エラーログ出力
+            logError(normalizeError(errorResponse.error), 'uploadImage')
             resolve(errorResponse)
           }
         } catch (error) {
+          const normalizedError = normalizeError(error)
+          logError(normalizedError, 'uploadImage - response parsing')
           reject(new Error('レスポンスの解析に失敗しました'))
         }
       })
       
       // エラー時の処理
       xhr.addEventListener('error', () => {
-        reject(new Error('ネットワークエラーが発生しました'))
+        const error = normalizeError(new Error('ネットワークエラーが発生しました'))
+        logError(error, 'uploadImage - network error')
+        reject(new Error('ネットワークエラーが発生しました。インターネット接続を確認してください。'))
       })
       
       // タイムアウト時の処理
       xhr.addEventListener('timeout', () => {
-        reject(new Error('アップロードがタイムアウトしました'))
+        const error = normalizeError(new Error('アップロードがタイムアウトしました'))
+        logError(error, 'uploadImage - timeout')
+        reject(new Error('アップロードがタイムアウトしました。ファイルサイズが大きすぎるか、ネットワークが不安定な可能性があります。'))
+      })
+      
+      // 中断時の処理
+      xhr.addEventListener('abort', () => {
+        const error = normalizeError(new Error('アップロードが中断されました'))
+        logError(error, 'uploadImage - abort')
+        reject(new Error('アップロードが中断されました'))
       })
       
       // リクエスト設定
-      xhr.timeout = 60000 // 60秒でタイムアウト
+      xhr.timeout = 120000 // 120秒でタイムアウト（大きなファイル対応）
       xhr.open('POST', `${apiUrl}/api/upload`)
       
       // リクエスト送信
@@ -110,14 +135,57 @@ export const uploadImage = async (
     })
     
   } catch (error) {
-    console.error('アップロードエラー:', error)
+    const normalizedError = normalizeError(error)
+    logError(normalizedError, 'uploadImage - general error')
+    
     return {
       success: false,
       error: {
-        code: 'UPLOAD_ERROR',
-        message: error instanceof Error ? error.message : 'アップロードに失敗しました'
+        code: normalizedError.code,
+        message: normalizedError.message,
+        details: normalizedError.details
       }
     }
+  }
+}
+
+/**
+ * HTTPステータスコードからエラーメッセージを取得
+ */
+const getErrorMessageFromStatus = (status: number): string => {
+  switch (status) {
+    case 400:
+      return 'リクエストに問題があります。入力内容を確認してください。'
+    case 401:
+      return 'アクセス権限がありません。'
+    case 403:
+      return 'この操作を実行する権限がありません。'
+    case 404:
+      return 'サーバーが見つかりません。'
+    case 408:
+      return 'リクエストがタイムアウトしました。'
+    case 413:
+      return 'ファイルサイズが大きすぎます。'
+    case 415:
+      return 'サポートされていないファイル形式です。'
+    case 429:
+      return 'リクエストが多すぎます。しばらく待ってから再試行してください。'
+    case 500:
+      return 'サーバー内部エラーが発生しました。'
+    case 502:
+      return 'サーバーが一時的に利用できません。'
+    case 503:
+      return 'サービスが一時的に利用できません。'
+    case 504:
+      return 'サーバーの応答がタイムアウトしました。'
+    default:
+      if (status >= 500) {
+        return 'サーバーエラーが発生しました。しばらく待ってから再試行してください。'
+      }
+      if (status >= 400) {
+        return 'リクエストエラーが発生しました。'
+      }
+      return `予期しないエラーが発生しました (${status})`
   }
 }
 
@@ -132,4 +200,27 @@ export const formatBytes = (bytes: number): string => {
   const i = Math.floor(Math.log(bytes) / Math.log(k))
   
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+}
+
+/**
+ * アップロード可能かどうかをチェック
+ */
+export const canUpload = (): { canUpload: boolean; reason?: string } => {
+  // ネットワーク接続チェック
+  if (!navigator.onLine) {
+    return {
+      canUpload: false,
+      reason: 'インターネット接続がありません'
+    }
+  }
+
+  // ブラウザサポートチェック
+  if (!window.FormData || !window.XMLHttpRequest) {
+    return {
+      canUpload: false,
+      reason: 'お使いのブラウザはファイルアップロードをサポートしていません'
+    }
+  }
+
+  return { canUpload: true }
 }

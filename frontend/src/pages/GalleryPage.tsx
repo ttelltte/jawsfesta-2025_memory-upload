@@ -1,14 +1,16 @@
 import { useState, useEffect } from 'react'
 import { fetchPhotos, Photo } from '../api/photos'
-import { Loading, ErrorMessage } from '../components'
+import { Loading, ErrorMessage, GallerySkeleton } from '../components'
+import { normalizeError, logError } from '../utils'
 
 type LayoutType = 'masonry' | 'grid'
 
 export const GalleryPage = () => {
   const [photos, setPhotos] = useState<Photo[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<unknown>(null)
   const [layout, setLayout] = useState<LayoutType>('masonry')
+  const [imageLoadingStates, setImageLoadingStates] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
     const loadPhotos = async () => {
@@ -22,12 +24,22 @@ export const GalleryPage = () => {
           // 新着順でソート（uploadTimeUnixの降順）
           const sortedPhotos = response.photos.sort((a, b) => b.uploadTimeUnix - a.uploadTimeUnix)
           setPhotos(sortedPhotos)
+          
+          // 画像読み込み状態を初期化
+          const loadingStates: Record<string, boolean> = {}
+          sortedPhotos.forEach(photo => {
+            loadingStates[photo.id] = true
+          })
+          setImageLoadingStates(loadingStates)
         } else {
-          setError(response.error?.message || '画像の取得に失敗しました')
+          const error = response.error || { code: 'FETCH_ERROR', message: '画像の取得に失敗しました' }
+          setError(error)
+          logError(normalizeError(error), 'loadPhotos')
         }
       } catch (err) {
-        setError('画像の取得中にエラーが発生しました')
-        console.error('画像取得エラー:', err)
+        const normalizedError = normalizeError(err)
+        logError(normalizedError, 'loadPhotos')
+        setError(normalizedError)
       } finally {
         setLoading(false)
       }
@@ -36,10 +48,37 @@ export const GalleryPage = () => {
     loadPhotos()
   }, [])
 
+  // 画像読み込み完了ハンドラー
+  const handleImageLoad = (photoId: string) => {
+    setImageLoadingStates(prev => ({
+      ...prev,
+      [photoId]: false
+    }))
+  }
+
+  // 画像読み込みエラーハンドラー
+  const handleImageError = (photoId: string) => {
+    setImageLoadingStates(prev => ({
+      ...prev,
+      [photoId]: false
+    }))
+  }
+
+  // リトライハンドラー
+  const handleRetry = () => {
+    setError(null)
+    setLoading(true)
+    // ページをリロードして再取得
+    window.location.reload()
+  }
+
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-64">
-        <Loading />
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold text-center text-gray-800 mb-8">
+          画像ギャラリー
+        </h1>
+        <GallerySkeleton layout={layout} count={12} />
       </div>
     )
   }
@@ -50,15 +89,11 @@ export const GalleryPage = () => {
         <h1 className="text-3xl font-bold text-center text-gray-800 mb-8">
           画像ギャラリー
         </h1>
-        <ErrorMessage message={error} />
-        <div className="text-center mt-4">
-          <button
-            onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-          >
-            再読み込み
-          </button>
-        </div>
+        <ErrorMessage 
+          error={error}
+          showRetry={true}
+          onRetry={handleRetry}
+        />
       </div>
     )
   }
@@ -90,55 +125,76 @@ export const GalleryPage = () => {
   }
 
   // 写真カードコンポーネント
-  const PhotoCard = ({ photo, isMasonry = false }: { photo: Photo; isMasonry?: boolean }) => (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200">
-      {/* 画像表示 */}
-      <div className={`bg-gray-100 relative ${isMasonry ? 'aspect-auto' : 'aspect-square'}`}>
-        {photo.presignedUrl ? (
-          <img
-            src={photo.presignedUrl}
-            alt={photo.comment || '投稿画像'}
-            className={`w-full ${isMasonry ? 'h-auto' : 'h-full'} object-cover`}
-            loading="lazy"
-            onError={(e) => {
-              const target = e.target as HTMLImageElement
-              target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5YTNhZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPuOCqOODqeODvDwvdGV4dD48L3N2Zz4='
-            }}
-          />
-        ) : (
-          <div className={`w-full ${isMasonry ? 'h-48' : 'h-full'} flex items-center justify-center text-gray-400`}>
-            <div className="text-center">
-              <div className="text-2xl mb-2">📷</div>
-              <div className="text-sm">読み込み中...</div>
-            </div>
-          </div>
-        )}
-      </div>
+  const PhotoCard = ({ photo, isMasonry = false }: { photo: Photo; isMasonry?: boolean }) => {
+    const isImageLoading = imageLoadingStates[photo.id] ?? true
 
-      {/* メタデータ表示 */}
-      <div className="p-3">
-        <div className="text-sm font-medium text-gray-800 mb-1">
-          {photo.uploaderName || '匿名'}
+    return (
+      <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200">
+        {/* 画像表示 */}
+        <div className={`bg-gray-100 relative ${isMasonry ? 'aspect-auto' : 'aspect-square'}`}>
+          {photo.presignedUrl ? (
+            <>
+              {/* ローディング表示 */}
+              {isImageLoading && (
+                <div className={`absolute inset-0 flex items-center justify-center bg-gray-100 ${isMasonry ? 'h-48' : 'h-full'}`}>
+                  <div className="text-center">
+                    <div className="w-8 h-8 border-4 border-gray-300 border-t-blue-600 rounded-full animate-spin mx-auto mb-2"></div>
+                    <div className="text-sm text-gray-500">読み込み中...</div>
+                  </div>
+                </div>
+              )}
+              
+              {/* 実際の画像 */}
+              <img
+                src={photo.presignedUrl}
+                alt={photo.comment || '投稿画像'}
+                className={`w-full ${isMasonry ? 'h-auto' : 'h-full'} object-cover transition-opacity duration-300 ${
+                  isImageLoading ? 'opacity-0' : 'opacity-100'
+                }`}
+                loading="lazy"
+                onLoad={() => handleImageLoad(photo.id)}
+                onError={(e) => {
+                  handleImageError(photo.id)
+                  const target = e.target as HTMLImageElement
+                  target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5YTNhZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPuOCqOODqeODvDwvdGV4dD48L3N2Zz4='
+                }}
+              />
+            </>
+          ) : (
+            <div className={`w-full ${isMasonry ? 'h-48' : 'h-full'} flex items-center justify-center text-gray-400`}>
+              <div className="text-center">
+                <div className="text-2xl mb-2">📷</div>
+                <div className="text-sm">画像なし</div>
+              </div>
+            </div>
+          )}
         </div>
-        
-        {photo.comment && (
-          <div className="text-sm text-gray-600 mb-2 line-clamp-2">
-            {photo.comment}
+
+        {/* メタデータ表示 */}
+        <div className="p-3">
+          <div className="text-sm font-medium text-gray-800 mb-1">
+            {photo.uploaderName || '匿名'}
           </div>
-        )}
-        
-        <div className="text-xs text-gray-500">
-          {new Date(photo.uploadTime).toLocaleString('ja-JP', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-          })}
+          
+          {photo.comment && (
+            <div className="text-sm text-gray-600 mb-2 line-clamp-2">
+              {photo.comment}
+            </div>
+          )}
+          
+          <div className="text-xs text-gray-500">
+            {new Date(photo.uploadTime).toLocaleString('ja-JP', {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit'
+            })}
+          </div>
         </div>
       </div>
-    </div>
-  )
+    )
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
