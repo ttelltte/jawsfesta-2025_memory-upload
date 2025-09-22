@@ -1,0 +1,49 @@
+{
+  "name": "jaws-festa-memory-upload",
+  "version": "1.0.0",
+  "description": "JAWS FESTA 2025 思い出アップロード - イベント参加者が撮影した画像を簡単に共有できるWebアプリケーション",
+  "main": "index.js",
+  "scripts": {
+    "install:all": "npm install && cd frontend && npm install && cd ../backend && npm install && cd ../infrastructure && npm install",
+    "build": "npm run build:frontend && npm run build:backend && npm run build:infrastructure",
+    "build:frontend": "cd frontend && npm run build",
+    "build:backend": "cd backend && npm run build",
+    "build:infrastructure": "cd infrastructure && npm run build",
+    "deploy": "cd infrastructure && npm run deploy",
+    "deploy:dev": "cd infrastructure && npm run deploy:dev",
+    "deploy:prod": "cd infrastructure && npm run deploy:prod",
+    "test": "npm run test:frontend && npm run test:backend && npm run test:infrastructure",
+    "test:frontend": "cd frontend && npm test",
+    "test:backend": "cd backend && npm test",
+    "test:infrastructure": "cd infrastructure && npm test",
+    "dev": "cd frontend && npm run dev",
+    "start": "npm run dev",
+    "cdk": "cd infrastructure && npm run cdk",
+    "synth": "cd infrastructure && npm run synth",
+    "diff": "cd infrastructure && npm run diff"
+  },
+  "keywords": [
+    "aws",
+    "cdk",
+    "serverless",
+    "react",
+    "typescript",
+    "jaws-ug",
+    "image-upload"
+  ],
+  "author": "JAWS-UG",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/jaws-festa-memory-upload.git"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "workspaces": [
+    "frontend",
+    "backend",
+    "infrastructure"
+  ]
+}

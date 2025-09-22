@@ -1,0 +1,53 @@
+{
+  "stackName": "JawsFestaMemoryUploadDev",
+  "environment": "dev",
+  "region": "ap-northeast-1",
+  "account": "",
+  "domainName": "",
+  "certificateArn": "",
+  "s3": {
+    "bucketName": "",
+    "corsAllowedOrigins": [
+      "http://localhost:3000",
+      "http://localhost:5173"
+    ]
+  },
+  "dynamodb": {
+    "photosTableName": "",
+    "configTableName": "",
+    "ttlDays": 30
+  },
+  "lambda": {
+    "runtime": "nodejs18.x",
+    "timeout": 30,
+    "memorySize": 256
+  },
+  "apiGateway": {
+    "corsAllowedOrigins": [
+      "http://localhost:3000",
+      "http://localhost:5173"
+    ],
+    "corsAllowedMethods": [
+      "GET",
+      "POST",
+      "OPTIONS"
+    ],
+    "corsAllowedHeaders": [
+      "Content-Type",
+      "X-Amz-Date",
+      "Authorization",
+      "X-Api-Key",
+      "X-Amz-Security-Token"
+    ]
+  },
+  "cloudfront": {
+    "priceClass": "PriceClass_100",
+    "cachePolicyId": "4135ea2d-6df8-44a3-9df3-4b5a84be39ad"
+  },
+  "tags": {
+    "Project": "JawsFestaMemoryUpload",
+    "Environment": "dev",
+    "Owner": "JAWS-UG",
+    "CostCenter": "Development"
+  }
+}
