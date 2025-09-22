@@ -1,7 +1,8 @@
 import React, { useState } from 'react'
-import { ImageUpload, MetadataForm, ChecklistForm, ConfirmationDialog, type MetadataFormData } from '../components'
+import { ImageUpload, MetadataForm, ChecklistForm, ConfirmationDialog, UploadProgress, SuccessMessage, type MetadataFormData } from '../components'
 import { validateFile } from '../utils'
 import { fetchChecklistConfig, type ChecklistItem } from '../api/config'
+import { uploadImage, type UploadProgress as UploadProgressType } from '../api/upload'
 
 export const UploadPage: React.FC = () => {
   const [selectedImage, setSelectedImage] = useState<File | null>(null)
@@ -15,6 +16,8 @@ export const UploadPage: React.FC = () => {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
   const [pendingMetadata, setPendingMetadata] = useState<MetadataFormData | null>(null)
   const [checklistItems, setChecklistItems] = useState<ChecklistItem[]>([])
+  const [uploadProgress, setUploadProgress] = useState<UploadProgressType | null>(null)
+  const [successMessage, setSuccessMessage] = useState<string | null>(null)
 
   const handleImageSelect = (file: File | null) => {
     if (!file) {
@@ -83,31 +86,47 @@ export const UploadPage: React.FC = () => {
     setIsSubmitting(true)
     setError(null)
     setChecklistError(null)
+    setSuccessMessage(null)
+    setUploadProgress(null)
 
     try {
-      // TODO: 次のタスクで実際のアップロード処理を実装
-      console.log('アップロード予定のデータ:', {
-        file: selectedImage,
-        metadata: pendingMetadata,
-        checkedItems
-      })
-      
-      // 仮の処理時間をシミュレート
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      
-      // 成功時の処理（次のタスクで実装）
-      alert('アップロードが完了しました！（仮の処理）')
-      
-      // フォームをリセット
-      setSelectedImage(null)
-      setShowMetadataForm(false)
-      setChecklistValid(false)
-      setCheckedItems({})
-      setShowChecklistValidation(false)
-      setPendingMetadata(null)
+      // アップロード処理を実行
+      const response = await uploadImage(
+        {
+          file: selectedImage,
+          uploaderName: pendingMetadata.name,
+          comment: pendingMetadata.comment,
+          checkedItems
+        },
+        (progress) => {
+          setUploadProgress(progress)
+        }
+      )
+
+      if (response.success && response.data) {
+        // 成功時の処理
+        setSuccessMessage('画像のアップロードが完了しました！他の参加者と思い出を共有できます。')
+        
+        // フォームをリセット
+        setSelectedImage(null)
+        setShowMetadataForm(false)
+        setChecklistValid(false)
+        setCheckedItems({})
+        setShowChecklistValidation(false)
+        setPendingMetadata(null)
+        setUploadProgress(null)
+        
+      } else {
+        // エラー時の処理
+        const errorMessage = response.error?.message || 'アップロードに失敗しました'
+        setError(errorMessage)
+        setUploadProgress(null)
+      }
       
     } catch (err) {
-      setError('アップロードに失敗しました。しばらく待ってから再試行してください。')
+      console.error('アップロードエラー:', err)
+      setError('ネットワークエラーが発生しました。しばらく待ってから再試行してください。')
+      setUploadProgress(null)
     } finally {
       setIsSubmitting(false)
     }
@@ -118,6 +137,10 @@ export const UploadPage: React.FC = () => {
     setPendingMetadata(null)
   }
 
+  const handleCloseSuccessMessage = () => {
+    setSuccessMessage(null)
+  }
+
   return (
     <div className="max-w-2xl mx-auto">
       <h1 className="text-3xl font-bold text-center text-gray-800 mb-8">
@@ -125,6 +148,29 @@ export const UploadPage: React.FC = () => {
       </h1>
       
       <div className="bg-white rounded-lg shadow-lg p-6">
+        {/* 成功メッセージ */}
+        {successMessage && (
+          <div className="mb-6">
+            <SuccessMessage
+              message={successMessage}
+              onClose={handleCloseSuccessMessage}
+              autoClose={true}
+              autoCloseDelay={8000}
+            />
+          </div>
+        )}
+
+        {/* アップロード進捗 */}
+        {uploadProgress && selectedImage && (
+          <div className="mb-6">
+            <UploadProgress
+              progress={uploadProgress}
+              fileName={selectedImage.name}
+              isUploading={isSubmitting}
+            />
+          </div>
+        )}
+
         <ImageUpload
           onImageSelect={handleImageSelect}
           selectedImage={selectedImage}
@@ -142,7 +188,7 @@ export const UploadPage: React.FC = () => {
                 onSubmit={handleMetadataSubmit}
                 isSubmitting={isSubmitting}
                 error={error}
-                disabled={!checklistValid}
+                disabled={!checklistValid || isSubmitting}
               />
             </div>
             
@@ -152,6 +198,7 @@ export const UploadPage: React.FC = () => {
                 onValidationChange={handleChecklistValidation}
                 error={checklistError}
                 showValidationErrors={showChecklistValidation}
+                disabled={isSubmitting}
               />
             </div>
           </div>

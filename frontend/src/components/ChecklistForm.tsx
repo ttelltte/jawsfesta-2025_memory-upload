@@ -6,12 +6,14 @@ interface ChecklistFormProps {
   onValidationChange: (isValid: boolean, checkedItems: Record<string, boolean>) => void
   error?: string | null
   showValidationErrors?: boolean
+  disabled?: boolean
 }
 
 export const ChecklistForm: React.FC<ChecklistFormProps> = ({
   onValidationChange,
   error,
-  showValidationErrors = false
+  showValidationErrors = false,
+  disabled = false
 }) => {
   const [checklistItems, setChecklistItems] = useState<ChecklistItem[]>([])
   const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>({})
@@ -120,21 +122,32 @@ export const ChecklistForm: React.FC<ChecklistFormProps> = ({
             <label
               key={item.id}
               className={`
-                flex items-start space-x-3 cursor-pointer group p-3 rounded-lg border transition-colors
+                flex items-start space-x-3 p-3 rounded-lg border transition-colors
+                ${disabled 
+                  ? 'cursor-not-allowed opacity-60' 
+                  : 'cursor-pointer group'
+                }
                 ${isChecked 
                   ? 'bg-green-50 border-green-200' 
                   : hasValidationError 
                     ? 'bg-red-50 border-red-200' 
-                    : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                    : disabled 
+                      ? 'bg-gray-100 border-gray-200' 
+                      : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
                 }
               `}
             >
               <input
                 type="checkbox"
                 checked={isChecked}
+                disabled={disabled}
                 onChange={(e) => handleCheckboxChange(item.id, e.target.checked)}
                 className={`
                   mt-1 w-4 h-4 rounded focus:ring-2
+                  ${disabled 
+                    ? 'cursor-not-allowed opacity-60' 
+                    : ''
+                  }
                   ${isChecked 
                     ? 'text-green-600 border-green-300 focus:ring-green-500' 
                     : hasValidationError 
