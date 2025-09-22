@@ -1,0 +1,21 @@
+{
+  "name": "memory-upload-lambda-upload",
+  "version": "1.0.0",
+  "description": "Lambda function for handling image uploads in JAWS FESTA Memory Upload application",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "aws-sdk": "^2.1691.0",
+    "uuid": "^9.0.1"
+  },
+  "keywords": [
+    "aws",
+    "lambda",
+    "upload",
+    "jaws-festa"
+  ],
+  "author": "",
+  "license": "MIT"
+}

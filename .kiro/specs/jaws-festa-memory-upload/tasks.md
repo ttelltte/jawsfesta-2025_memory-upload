@@ -35,22 +35,35 @@
   - CloudFront Distribution の設定
   - _Requirements: 5.1, 5.2, 5.3_
 
-- [ ] 3. Lambda 関数の基本構造実装
-- [ ] 3.1 Upload Lambda 関数の実装
+- [x] 3. Lambda 関数の基本構造実装
+
+
+
+
+
+
+- [x] 3.1 Upload Lambda 関数の実装
+
+
+
   - 基本的なLambda関数の作成
   - API Gateway との統合設定
   - 環境変数の設定（DynamoDB テーブル名、S3バケット名）
   - 基本的なエラーハンドリングの実装
   - _Requirements: 1.5, 1.6, 1.7_
 
-- [ ] 3.2 List Lambda 関数の実装
+- [x] 3.2 List Lambda 関数の実装
+
+
   - 画像一覧取得のLambda関数作成
   - DynamoDB からのデータ取得ロジック
   - 新着順ソート機能の実装
   - S3 Presigned URL 生成機能
   - _Requirements: 4.1, 4.2_
 
-- [ ] 3.3 Config Lambda 関数の実装
+- [x] 3.3 Config Lambda 関数の実装
+
+
   - 確認項目設定取得のLambda関数作成
   - DynamoDB Config テーブルからの設定読み込み
   - JSON レスポンス形式の実装

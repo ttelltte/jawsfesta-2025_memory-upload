@@ -3,7 +3,11 @@ import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
+import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as apigateway from 'aws-cdk-lib/aws-apigateway';
+import * as iam from 'aws-cdk-lib/aws-iam';
 import { Construct } from 'constructs';
+import * as path from 'path';
 
 export interface MemoryUploadStackProps extends cdk.StackProps {
   config: any;
@@ -16,6 +20,10 @@ export class MemoryUploadStack extends cdk.Stack {
   public readonly photosTable: dynamodb.Table;
   public readonly configTable: dynamodb.Table;
   public readonly distribution: cloudfront.Distribution;
+  public readonly api: apigateway.RestApi;
+  public readonly uploadFunction: lambda.Function;
+  public readonly listFunction: lambda.Function;
+  public readonly configFunction: lambda.Function;
 
   constructor(scope: Construct, id: string, props: MemoryUploadStackProps) {
     super(scope, id, props);
@@ -157,6 +165,122 @@ export class MemoryUploadStack extends cdk.Stack {
     });
 
     // ===========================================
+    // Lambda Functions
+    // ===========================================
+    
+    // Upload Lambda 関数
+    this.uploadFunction = new lambda.Function(this, 'UploadFunction', {
+      runtime: lambda.Runtime.NODEJS_18_X,
+      handler: 'index.handler',
+      code: lambda.Code.fromAsset(path.join(__dirname, '../../lambda/upload')),
+      timeout: cdk.Duration.seconds(30),
+      memorySize: 512,
+      environment: {
+        PHOTOS_TABLE_NAME: this.photosTable.tableName,
+        CONFIG_TABLE_NAME: this.configTable.tableName,
+        PHOTOS_BUCKET_NAME: this.photosBucket.bucketName,
+      },
+      description: 'Lambda function for handling image uploads',
+    });
+
+    // List Lambda 関数
+    this.listFunction = new lambda.Function(this, 'ListFunction', {
+      runtime: lambda.Runtime.NODEJS_18_X,
+      handler: 'index.handler',
+      code: lambda.Code.fromAsset(path.join(__dirname, '../../lambda/list')),
+      timeout: cdk.Duration.seconds(30),
+      memorySize: 256,
+      environment: {
+        PHOTOS_TABLE_NAME: this.photosTable.tableName,
+        PHOTOS_BUCKET_NAME: this.photosBucket.bucketName,
+      },
+      description: 'Lambda function for retrieving photo list',
+    });
+
+    // Config Lambda 関数
+    this.configFunction = new lambda.Function(this, 'ConfigFunction', {
+      runtime: lambda.Runtime.NODEJS_18_X,
+      handler: 'index.handler',
+      code: lambda.Code.fromAsset(path.join(__dirname, '../../lambda/config')),
+      timeout: cdk.Duration.seconds(15),
+      memorySize: 128,
+      environment: {
+        CONFIG_TABLE_NAME: this.configTable.tableName,
+      },
+      description: 'Lambda function for retrieving configuration',
+    });
+
+    // ===========================================
+    // IAM 権限設定
+    // ===========================================
+    
+    // Upload Lambda の権限
+    this.photosBucket.grantReadWrite(this.uploadFunction);
+    this.photosTable.grantWriteData(this.uploadFunction);
+    this.configTable.grantReadData(this.uploadFunction);
+
+    // List Lambda の権限
+    this.photosBucket.grantRead(this.listFunction);
+    this.photosTable.grantReadData(this.listFunction);
+
+    // Config Lambda の権限
+    this.configTable.grantReadData(this.configFunction);
+
+    // ===========================================
+    // API Gateway
+    // ===========================================
+    
+    this.api = new apigateway.RestApi(this, 'MemoryUploadApi', {
+      restApiName: `JAWS FESTA Memory Upload API (${environment})`,
+      description: 'API for JAWS FESTA Memory Upload application',
+      
+      // CORS設定
+      defaultCorsPreflightOptions: {
+        allowOrigins: apigateway.Cors.ALL_ORIGINS,
+        allowMethods: apigateway.Cors.ALL_METHODS,
+        allowHeaders: [
+          'Content-Type',
+          'X-Amz-Date',
+          'Authorization',
+          'X-Api-Key',
+          'X-Amz-Security-Token',
+        ],
+      },
+      
+      // バイナリメディアタイプ（画像アップロード用）
+      binaryMediaTypes: ['image/*', 'multipart/form-data'],
+      
+      // エンドポイント設定
+      endpointConfiguration: {
+        types: [apigateway.EndpointType.REGIONAL],
+      },
+      
+      // CloudWatch ログ設定
+      cloudWatchRole: true,
+      deployOptions: {
+        stageName: environment,
+        loggingLevel: apigateway.MethodLoggingLevel.INFO,
+        dataTraceEnabled: true,
+        metricsEnabled: true,
+      },
+    });
+
+    // API リソースとメソッドの設定
+    const apiResource = this.api.root.addResource('api');
+    
+    // /api/upload エンドポイント
+    const uploadResource = apiResource.addResource('upload');
+    uploadResource.addMethod('POST', new apigateway.LambdaIntegration(this.uploadFunction));
+    
+    // /api/photos エンドポイント
+    const photosResource = apiResource.addResource('photos');
+    photosResource.addMethod('GET', new apigateway.LambdaIntegration(this.listFunction));
+    
+    // /api/config エンドポイント
+    const configResource = apiResource.addResource('config');
+    configResource.addMethod('GET', new apigateway.LambdaIntegration(this.configFunction));
+
+    // ===========================================
     // CloudFront Distribution
     // ===========================================
     this.distribution = new cloudfront.Distribution(this, 'Distribution', {
@@ -175,8 +299,9 @@ export class MemoryUploadStack extends cdk.Stack {
         originRequestPolicy: cloudfront.OriginRequestPolicy.CORS_S3_ORIGIN,
       },
       
-      // 追加ビヘイビア（画像ファイル用）
+      // 追加ビヘイビア
       additionalBehaviors: {
+        // 画像ファイル用
         '/images/*': {
           origin: new origins.S3StaticWebsiteOrigin(this.photosBucket),
           viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
@@ -187,6 +312,18 @@ export class MemoryUploadStack extends cdk.Stack {
           // 画像用のキャッシュポリシー（長期キャッシュ）
           cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED,
           originRequestPolicy: cloudfront.OriginRequestPolicy.CORS_S3_ORIGIN,
+        },
+        
+        // API Gateway用
+        '/api/*': {
+          origin: new origins.RestApiOrigin(this.api),
+          viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+          allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
+          cachedMethods: cloudfront.CachedMethods.CACHE_GET_HEAD_OPTIONS,
+          
+          // API用のキャッシュポリシー（キャッシュしない）
+          cachePolicy: cloudfront.CachePolicy.CACHING_DISABLED,
+          originRequestPolicy: cloudfront.OriginRequestPolicy.ALL_VIEWER,
         },
       },
       
@@ -287,6 +424,38 @@ export class MemoryUploadStack extends cdk.Stack {
       value: `https://${this.distribution.distributionDomainName}`,
       description: 'Website URL (CloudFront)',
       exportName: `${this.stackName}-WebsiteUrl`,
+    });
+
+    // API Gateway情報
+    new cdk.CfnOutput(this, 'ApiGatewayUrl', {
+      value: this.api.url,
+      description: 'API Gateway URL',
+      exportName: `${this.stackName}-ApiGatewayUrl`,
+    });
+
+    new cdk.CfnOutput(this, 'ApiGatewayId', {
+      value: this.api.restApiId,
+      description: 'API Gateway ID',
+      exportName: `${this.stackName}-ApiGatewayId`,
+    });
+
+    // Lambda Functions情報
+    new cdk.CfnOutput(this, 'UploadFunctionName', {
+      value: this.uploadFunction.functionName,
+      description: 'Upload Lambda Function Name',
+      exportName: `${this.stackName}-UploadFunctionName`,
+    });
+
+    new cdk.CfnOutput(this, 'ListFunctionName', {
+      value: this.listFunction.functionName,
+      description: 'List Lambda Function Name',
+      exportName: `${this.stackName}-ListFunctionName`,
+    });
+
+    new cdk.CfnOutput(this, 'ConfigFunctionName', {
+      value: this.configFunction.functionName,
+      description: 'Config Lambda Function Name',
+      exportName: `${this.stackName}-ConfigFunctionName`,
     });
   }
 }
