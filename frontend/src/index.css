@@ -1,3 +1,223 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ブラウザ互換性とモバイル対応のための追加スタイル */
+
+/* ベーススタイル */
+* {
+  box-sizing: border-box;
+}
+
+html {
+  /* iOS Safariでのズーム無効化 */
+  -webkit-text-size-adjust: 100%;
+  /* タッチ操作の最適化 */
+  touch-action: manipulation;
+}
+
+body {
+  /* フォントの最適化 */
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  
+  /* スクロールの最適化 */
+  -webkit-overflow-scrolling: touch;
+  overflow-x: hidden;
+}
+
+/* ボタンとインタラクティブ要素の最適化 */
+button, 
+input[type="button"], 
+input[type="submit"], 
+input[type="file"] {
+  /* iOS Safariでのボタンスタイル正規化 */
+  -webkit-appearance: none;
+  appearance: none;
+  
+  /* タッチ操作の最適化 */
+  touch-action: manipulation;
+  
+  /* 最小タップサイズの確保（44px推奨） */
+  min-height: 44px;
+}
+
+/* フォーム要素の最適化 */
+input, 
+textarea, 
+select {
+  /* iOS Safariでのフォームスタイル正規化 */
+  -webkit-appearance: none;
+  appearance: none;
+  
+  /* ズーム無効化 */
+  font-size: 16px;
+}
+
+/* 画像の最適化 */
+img {
+  /* 画像の最大幅制限 */
+  max-width: 100%;
+  height: auto;
+  
+  /* 画像の読み込み最適化 */
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+}
+
+/* ドラッグ&ドロップエリアの最適化 */
+.drag-drop-area {
+  /* タッチデバイスでのドラッグ無効化 */
+  -webkit-user-drag: none;
+  user-drag: none;
+  
+  /* 選択無効化 */
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* スクロールバーの最適化 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* フォーカス表示の最適化 */
+*:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* ローディングアニメーションの最適化 */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* マソンリーレイアウトの最適化 */
+.masonry {
+  column-fill: balance;
+  column-gap: 1rem;
+}
+
+.masonry > * {
+  break-inside: avoid;
+  margin-bottom: 1rem;
+}
+
+/* グリッドレイアウトの最適化 */
+.grid {
+  display: grid;
+  gap: 1rem;
+}
+
+/* レスポンシブ画像コンテナ */
+.aspect-square {
+  aspect-ratio: 1 / 1;
+}
+
+.aspect-auto {
+  aspect-ratio: auto;
+}
+
+/* テキストの行数制限 */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* モバイル専用スタイル */
+@media (max-width: 768px) {
+  /* タッチ操作の最適化 */
+  button {
+    min-height: 48px;
+    padding: 12px 16px;
+  }
+  
+  /* フォント サイズの最適化 */
+  input, textarea {
+    font-size: 16px; /* iOS Safariでのズーム防止 */
+  }
+  
+  /* ナビゲーションの最適化 */
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+  
+  /* コンテナの最適化 */
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+
+/* 高解像度ディスプレイ対応 */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  img {
+    image-rendering: -webkit-optimize-contrast;
+  }
+}
+
+/* ダークモード対応（システム設定に応じて） */
+@media (prefers-color-scheme: dark) {
+  /* 必要に応じてダークモードスタイルを追加 */
+}
+
+/* 動きを減らす設定に対応 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* 印刷スタイル */
+@media print {
+  * {
+    background: transparent !important;
+    color: black !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+  
+  a, a:visited {
+    text-decoration: underline;
+  }
+  
+  img {
+    max-width: 100% !important;
+    page-break-inside: avoid;
+  }
+}

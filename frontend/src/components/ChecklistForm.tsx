@@ -99,7 +99,7 @@ export const ChecklistForm: React.FC<ChecklistFormProps> = ({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" data-testid="confirmation-items">
       <h3 className="text-lg font-semibold text-gray-800">確認項目</h3>
       
       {/* 注意事項の表示 */}

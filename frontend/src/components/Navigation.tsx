@@ -6,11 +6,12 @@ const Navigation: React.FC = () => {
 
   const navItems = [
     { path: '/', label: 'アップロード', icon: '📤' },
-    { path: '/gallery', label: 'ギャラリー', icon: '🖼️' }
+    { path: '/gallery', label: 'ギャラリー', icon: '🖼️' },
+    ...(import.meta.env.DEV ? [{ path: '/test', label: 'テスト', icon: '🧪' }] : [])
   ]
 
   return (
-    <nav className="bg-white shadow-sm border-b border-gray-200">
+    <nav className="bg-white shadow-sm border-b border-gray-200" data-testid="navigation">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* ロゴ・タイトル */}
@@ -31,6 +32,11 @@ const Navigation: React.FC = () => {
                     ? 'bg-blue-100 text-blue-700'
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                 }`}
+                data-testid={
+                  item.path === '/' ? 'nav-upload' : 
+                  item.path === '/gallery' ? 'nav-gallery' : 
+                  'nav-test'
+                }
               >
                 <span className="mr-2">{item.icon}</span>
                 {item.label}

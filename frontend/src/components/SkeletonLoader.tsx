@@ -100,7 +100,7 @@ export const GallerySkeleton: React.FC<{
 }) => {
   if (layout === 'masonry') {
     return (
-      <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 xl:columns-5 gap-4 space-y-4">
+      <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 xl:columns-5 gap-4 space-y-4" data-testid="skeleton-loader">
         {Array.from({ length: count }).map((_, index) => (
           <div key={index} className="break-inside-avoid mb-4">
             <PhotoCardSkeleton isMasonry={true} />
@@ -111,7 +111,7 @@ export const GallerySkeleton: React.FC<{
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4" data-testid="skeleton-loader">
       {Array.from({ length: count }).map((_, index) => (
         <PhotoCardSkeleton key={index} isMasonry={false} />
       ))}

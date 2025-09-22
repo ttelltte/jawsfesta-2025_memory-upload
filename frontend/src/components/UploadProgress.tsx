@@ -13,7 +13,7 @@ export const UploadProgress: React.FC<UploadProgressProps> = ({
   isUploading
 }) => {
   return (
-    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4" data-testid="upload-progress">
       <div className="flex items-center justify-between mb-2">
         <h3 className="text-sm font-medium text-blue-800">
           {isUploading ? 'アップロード中...' : 'アップロード完了'}

@@ -92,13 +92,13 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" data-testid="upload-area">
       {/* エラーメッセージ */}
       {error && <ErrorMessage message={error} type="error" />}
 
       {/* プレビュー表示 */}
       {previewUrl && selectedImage && (
-        <div className="relative bg-white rounded-lg shadow-md p-4">
+        <div className="relative bg-white rounded-lg shadow-md p-4" data-testid="image-preview">
           <div className="flex justify-between items-start mb-2">
             <h3 className="text-lg font-medium text-gray-800">選択された画像</h3>
             <button
@@ -167,6 +167,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
               <button
                 onClick={handleFileButtonClick}
                 className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                data-testid="file-select-button"
               >
                 📁 ファイルを選択
               </button>
@@ -174,6 +175,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
               <button
                 onClick={handleCameraClick}
                 className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium sm:hidden"
+                data-testid="camera-button"
               >
                 📷 カメラで撮影
               </button>

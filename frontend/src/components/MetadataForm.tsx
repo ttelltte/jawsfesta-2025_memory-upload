@@ -101,6 +101,7 @@ export const MetadataForm: React.FC<MetadataFormProps> = ({
           `}
           disabled={isSubmitting || disabled}
           maxLength={50}
+          data-testid="uploader-name"
         />
         {validationErrors.uploaderName && (
           <p className="mt-1 text-sm text-red-600">{validationErrors.uploaderName}</p>
@@ -130,6 +131,7 @@ export const MetadataForm: React.FC<MetadataFormProps> = ({
           `}
           disabled={isSubmitting || disabled}
           maxLength={500}
+          data-testid="comment"
         />
         {validationErrors.comment && (
           <p className="mt-1 text-sm text-red-600">{validationErrors.comment}</p>
@@ -152,6 +154,7 @@ export const MetadataForm: React.FC<MetadataFormProps> = ({
               : 'bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
             }
           `}
+          data-testid="upload-button"
         >
           {isSubmitting ? (
             <span className="flex items-center justify-center">

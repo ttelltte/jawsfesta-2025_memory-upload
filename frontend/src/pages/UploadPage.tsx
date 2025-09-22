@@ -170,9 +170,9 @@ export const UploadPage: React.FC = () => {
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="max-w-2xl mx-auto" data-testid="upload-container">
       <h1 className="text-3xl font-bold text-center text-gray-800 mb-8">
-        画像アップロード
+        思い出をアップロード
       </h1>
       
       <div className="bg-white rounded-lg shadow-lg p-6">

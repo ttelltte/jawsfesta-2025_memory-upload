@@ -104,7 +104,7 @@ export const GalleryPage = () => {
         <h1 className="text-3xl font-bold text-center text-gray-800 mb-8">
           画像ギャラリー
         </h1>
-        <div className="text-center py-12">
+        <div className="text-center py-12" data-testid="empty-message">
           <div className="text-gray-500 text-lg mb-4">
             📷
           </div>
@@ -129,7 +129,7 @@ export const GalleryPage = () => {
     const isImageLoading = imageLoadingStates[photo.id] ?? true
 
     return (
-      <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200">
+      <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200" data-testid="photo-item">
         {/* 画像表示 */}
         <div className={`bg-gray-100 relative ${isMasonry ? 'aspect-auto' : 'aspect-square'}`}>
           {photo.presignedUrl ? (
@@ -171,18 +171,18 @@ export const GalleryPage = () => {
         </div>
 
         {/* メタデータ表示 */}
-        <div className="p-3">
-          <div className="text-sm font-medium text-gray-800 mb-1">
+        <div className="p-3" data-testid="photo-metadata">
+          <div className="text-sm font-medium text-gray-800 mb-1" data-testid="uploader-name">
             {photo.uploaderName || '匿名'}
           </div>
           
           {photo.comment && (
-            <div className="text-sm text-gray-600 mb-2 line-clamp-2">
+            <div className="text-sm text-gray-600 mb-2 line-clamp-2" data-testid="comment">
               {photo.comment}
             </div>
           )}
           
-          <div className="text-xs text-gray-500">
+          <div className="text-xs text-gray-500" data-testid="upload-time" data-timestamp={photo.uploadTimeUnix}>
             {new Date(photo.uploadTime).toLocaleString('ja-JP', {
               year: 'numeric',
               month: 'short',
@@ -199,7 +199,7 @@ export const GalleryPage = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold text-center text-gray-800 mb-8">
-        画像ギャラリー
+        思い出ギャラリー
       </h1>
       
       {/* ヘッダー情報とレイアウト切り替えボタン */}
@@ -217,6 +217,7 @@ export const GalleryPage = () => {
                 ? 'bg-blue-500 text-white'
                 : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
             }`}
+            data-testid="layout-toggle"
           >
             📱 マソンリー
           </button>
@@ -227,6 +228,7 @@ export const GalleryPage = () => {
                 ? 'bg-blue-500 text-white'
                 : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
             }`}
+            data-testid="layout-toggle"
           >
             🔲 グリッド
           </button>
@@ -236,7 +238,7 @@ export const GalleryPage = () => {
       {/* レイアウト別表示 */}
       {layout === 'masonry' ? (
         /* マソンリーレイアウト */
-        <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 xl:columns-5 gap-4 space-y-4">
+        <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 xl:columns-5 gap-4 space-y-4 masonry" data-testid="gallery-container">
           {photos.map((photo) => (
             <div key={photo.id} className="break-inside-avoid mb-4">
               <PhotoCard photo={photo} isMasonry={true} />
@@ -245,7 +247,7 @@ export const GalleryPage = () => {
         </div>
       ) : (
         /* カードグリッドレイアウト（統一サイズ） */
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4" data-testid="gallery-container">
           {photos.map((photo) => (
             <PhotoCard key={photo.id} photo={photo} isMasonry={false} />
           ))}

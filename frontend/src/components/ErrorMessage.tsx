@@ -106,7 +106,7 @@ const ErrorMessage: React.FC<ErrorMessageProps> = ({
   if (!displayInfo.message && !message) return null
 
   return (
-    <div className={`border rounded-lg p-4 ${styles.container} ${className}`}>
+    <div className={`border rounded-lg p-4 ${styles.container} ${className}`} data-testid="error-message">
       <div className="flex items-start">
         <div className="flex-shrink-0">
           {getIcon()}
