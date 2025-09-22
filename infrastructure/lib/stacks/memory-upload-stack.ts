@@ -191,7 +191,7 @@ export class MemoryUploadStack extends cdk.Stack {
         
         // 環境設定
         ENVIRONMENT: environment,
-        AWS_REGION: this.region,
+        REGION: this.region,
         
         // アプリケーション設定
         MAX_FILE_SIZE: config.upload?.maxFileSize || '10485760', // 10MB
@@ -226,7 +226,7 @@ export class MemoryUploadStack extends cdk.Stack {
         
         // 環境設定
         ENVIRONMENT: environment,
-        AWS_REGION: this.region,
+        REGION: this.region,
         
         // アプリケーション設定
         PRESIGNED_URL_EXPIRY: config.s3?.presignedUrlExpiry || '3600', // 1時間
@@ -257,7 +257,7 @@ export class MemoryUploadStack extends cdk.Stack {
         
         // 環境設定
         ENVIRONMENT: environment,
-        AWS_REGION: this.region,
+        REGION: this.region,
         
         // キャッシュ設定
         CACHE_TTL: config.cache?.configTtl || '300', // 5分
@@ -342,7 +342,7 @@ export class MemoryUploadStack extends cdk.Stack {
         this.configTable.tableArn,
       ],
       conditions: {
-        ForAllValues:StringEquals: {
+        'ForAllValues:StringEquals': {
           'dynamodb:Attributes': ['PK', 'SK', 'items', 'updatedAt'],
         },
       },

@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
-import { ImageUpload, MetadataForm, ChecklistForm, ConfirmationDialog, UploadProgress, UploadSuccessMessage, ErrorMessage, type MetadataFormData } from '../components'
+import { ImageUpload, MetadataForm, ChecklistForm, ConfirmationDialog, UploadProgress, ErrorMessage, type MetadataFormData } from '../components'
+import { UploadSuccessMessage } from '../components/SuccessMessage'
 import { validateFile, normalizeError, logError } from '../utils'
 import { fetchChecklistConfig, type ChecklistItem } from '../api/config'
 import { uploadImage, canUpload, type UploadProgress as UploadProgressType } from '../api/upload'
@@ -105,7 +106,7 @@ export const UploadPage: React.FC = () => {
       const response = await uploadImage(
         {
           file: selectedImage,
-          uploaderName: pendingMetadata.name,
+          uploaderName: pendingMetadata.uploaderName,
           comment: pendingMetadata.comment,
           checkedItems
         },
