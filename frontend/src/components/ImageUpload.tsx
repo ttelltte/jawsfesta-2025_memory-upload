@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react'
-import { ErrorMessage } from './ErrorMessage'
+import ErrorMessage from './ErrorMessage'
 import { validateFile, formatFileSize, getFileTypeDescription } from '../utils'
 
 interface ImageUploadProps {

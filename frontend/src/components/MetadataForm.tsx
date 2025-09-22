@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { ErrorMessage } from './ErrorMessage'
+import ErrorMessage from './ErrorMessage'
 
 export interface MetadataFormData {
   uploaderName: string
@@ -10,12 +10,14 @@ interface MetadataFormProps {
   onSubmit: (data: MetadataFormData) => void
   isSubmitting?: boolean
   error?: string | null
+  disabled?: boolean
 }
 
 export const MetadataForm: React.FC<MetadataFormProps> = ({
   onSubmit,
   isSubmitting = false,
-  error
+  error,
+  disabled = false
 }) => {
   const [formData, setFormData] = useState<MetadataFormData>({
     uploaderName: '',
@@ -97,7 +99,7 @@ export const MetadataForm: React.FC<MetadataFormProps> = ({
               : 'border-gray-300'
             }
           `}
-          disabled={isSubmitting}
+          disabled={isSubmitting || disabled}
           maxLength={50}
         />
         {validationErrors.uploaderName && (
@@ -126,7 +128,7 @@ export const MetadataForm: React.FC<MetadataFormProps> = ({
               : 'border-gray-300'
             }
           `}
-          disabled={isSubmitting}
+          disabled={isSubmitting || disabled}
           maxLength={500}
         />
         {validationErrors.comment && (
@@ -142,10 +144,10 @@ export const MetadataForm: React.FC<MetadataFormProps> = ({
       <div className="pt-4">
         <button
           type="submit"
-          disabled={isSubmitting}
+          disabled={isSubmitting || disabled}
           className={`
             w-full py-3 px-4 rounded-lg font-medium transition-colors
-            ${isSubmitting
+            ${isSubmitting || disabled
               ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
               : 'bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
             }
@@ -159,8 +161,10 @@ export const MetadataForm: React.FC<MetadataFormProps> = ({
               </svg>
               アップロード中...
             </span>
+          ) : disabled ? (
+            '確認項目をチェックしてください'
           ) : (
-            '次へ進む（確認項目へ）'
+            'アップロード'
           )}
         </button>
       </div>
