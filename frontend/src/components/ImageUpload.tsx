@@ -176,7 +176,10 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
                 画像をアップロード
               </p>
               <p className="text-sm text-gray-500 mb-4">
-                ファイルをドラッグ&ドロップするか、下のボタンから選択してください
+                {isMobile 
+                  ? 'ボタンから撮影または画像を選択してください'
+                  : 'ファイルをドラッグ&ドロップするか、下のボタンから選択してください'
+                }
               </p>
             </div>
 
@@ -190,8 +193,8 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
                   } bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center justify-center gap-2`}
                 data-testid="upload-button"
               >
-                <i className="fas fa-camera"></i>
-                画像をアップロード
+                <i className={`fas ${isMobile ? 'fa-camera' : 'fa-cloud-upload-alt'}`}></i>
+                {isMobile ? '撮影・画像選択' : '画像をアップロード'}
               </button>
             </div>
 

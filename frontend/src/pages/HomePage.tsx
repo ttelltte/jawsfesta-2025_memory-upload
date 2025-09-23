@@ -8,6 +8,79 @@ import { fetchPhotos, Photo } from '../api/photos'
 
 type LayoutType = 'masonry' | 'grid'
 
+// マソンリーレイアウトコンポーネント
+const MasonryLayout: React.FC<{ photos: Photo[], onImageClick: (photo: Photo) => void }> = ({ photos, onImageClick }) => {
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 640)
+    }
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
+
+  // スマホの場合は2列、それ以外は複数列
+  const columnCount = isMobile ? 2 : Math.min(Math.max(2, Math.floor(window.innerWidth / 250)), 6)
+  
+  // 写真を列に分散
+  const columns: Photo[][] = Array.from({ length: columnCount }, () => [])
+  
+  photos.forEach((photo, index) => {
+    const columnIndex = index % columnCount
+    columns[columnIndex].push(photo)
+  })
+
+  return (
+    <div className="flex gap-2 sm:gap-3">
+      {columns.map((columnPhotos, columnIndex) => (
+        <div key={columnIndex} className="flex-1 space-y-2 sm:space-y-3">
+          {columnPhotos.map((photo) => (
+            <div key={photo.id}>
+              <div 
+                className="group relative rounded-lg overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer" 
+                onClick={() => onImageClick(photo)}
+              >
+                {photo.presignedUrl ? (
+                  <img
+                    src={photo.presignedUrl}
+                    alt={photo.comment || '投稿画像'}
+                    className="w-full h-auto object-cover"
+                    loading="lazy"
+                  />
+                ) : (
+                  <div className="w-full h-32 sm:h-40 flex items-center justify-center text-gray-400 bg-gray-100">
+                    <div className="text-center">
+                      <i className="fas fa-image text-2xl sm:text-3xl mb-2"></i>
+                      <div className="text-xs sm:text-sm">画像なし</div>
+                    </div>
+                  </div>
+                )}
+                
+                {/* 撮影者名を左上にオーバーレイ（匿名以外の場合のみ） */}
+                {photo.uploaderName && photo.uploaderName !== 'Anonymous' && photo.uploaderName !== '匿名' && (
+                  <div className="absolute top-1 left-1 bg-black bg-opacity-30 text-white px-1.5 py-0.5 rounded text-xs max-w-[70%] truncate">
+                    {photo.uploaderName.length > 8 ? `${photo.uploaderName.substring(0, 8)}...` : photo.uploaderName}
+                  </div>
+                )}
+                
+                {/* ホバー時の詳細表示 */}
+                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-60 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
+                  <div className="text-white text-center">
+                    <i className="fas fa-search-plus text-2xl sm:text-3xl mb-2"></i>
+                    <div className="text-xs sm:text-sm font-medium">詳細を見る</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export const HomePage: React.FC = () => {
   // アップロード関連のstate
   const [selectedImage, setSelectedImage] = useState<File | null>(null)
@@ -294,6 +367,7 @@ export const HomePage: React.FC = () => {
               onCancel={handleCancelUpload}
               metadata={pendingMetadata}
               fileName={selectedImage.name}
+              selectedImage={selectedImage}
             />
           )}
         </div>
@@ -361,47 +435,7 @@ export const HomePage: React.FC = () => {
           ) : (
             <>
               {layout === 'masonry' ? (
-                <div className="columns-2 sm:columns-3 md:columns-4 lg:columns-5 xl:columns-6 gap-2 sm:gap-3">
-                  {photos.map((photo) => (
-                    <div key={photo.id} className="break-inside-avoid mb-2 sm:mb-3">
-                      <div 
-                        className="group relative rounded-lg overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer" 
-                        onClick={() => handleImageClick(photo)}
-                      >
-                        {photo.presignedUrl ? (
-                          <img
-                            src={photo.presignedUrl}
-                            alt={photo.comment || '投稿画像'}
-                            className="w-full h-auto object-cover"
-                            loading="lazy"
-                          />
-                        ) : (
-                          <div className="w-full h-32 sm:h-40 flex items-center justify-center text-gray-400 bg-gray-100">
-                            <div className="text-center">
-                              <i className="fas fa-image text-2xl sm:text-3xl mb-2"></i>
-                              <div className="text-xs sm:text-sm">画像なし</div>
-                            </div>
-                          </div>
-                        )}
-                        
-                        {/* 撮影者名を左上にオーバーレイ（匿名以外の場合のみ） */}
-                        {photo.uploaderName && photo.uploaderName !== 'Anonymous' && photo.uploaderName !== '匿名' && (
-                          <div className="absolute top-2 left-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-xs font-medium max-w-[80%] truncate">
-                            {photo.uploaderName.length > 10 ? `${photo.uploaderName.substring(0, 10)}...` : photo.uploaderName}
-                          </div>
-                        )}
-                        
-                        {/* ホバー時の詳細表示 */}
-                        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-60 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
-                          <div className="text-white text-center">
-                            <i className="fas fa-search-plus text-2xl sm:text-3xl mb-2"></i>
-                            <div className="text-xs sm:text-sm font-medium">詳細を見る</div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                <MasonryLayout photos={photos} onImageClick={handleImageClick} />
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
                   {photos.map((photo) => (
@@ -492,13 +526,13 @@ export const HomePage: React.FC = () => {
                 </button>
               </div>
               
-              {/* 画像表示エリア - 最大サイズ */}
-              <div className="flex-1 flex items-center justify-center mb-4">
+              {/* 画像表示エリア - サイズ制限 */}
+              <div className="flex-1 flex items-center justify-center mb-4 min-h-0">
                 {selectedPhoto.presignedUrl ? (
                   <img
                     src={selectedPhoto.presignedUrl}
                     alt={selectedPhoto.comment || '投稿画像'}
-                    className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+                    className="max-w-full max-h-[calc(100vh-200px)] object-contain rounded-lg shadow-2xl"
                   />
                 ) : (
                   <div className="w-64 h-64 flex items-center justify-center text-gray-400 bg-gray-800 rounded-lg">

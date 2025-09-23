@@ -8,6 +8,7 @@ interface ConfirmationDialogProps {
   onCancel: () => void
   metadata: MetadataFormData
   fileName: string
+  selectedImage: File | null
 }
 
 export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
@@ -15,11 +16,13 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
   onConfirm,
   onCancel,
   metadata,
-  fileName
+  fileName,
+  selectedImage
 }) => {
   const [checklistItems, setChecklistItems] = useState<ChecklistItem[]>([])
   const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>({})
   const [loading, setLoading] = useState(true)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
 
   // 確認項目設定を取得
   useEffect(() => {
@@ -47,6 +50,19 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
 
     loadChecklistConfig()
   }, [isOpen])
+
+  // プレビュー画像の生成
+  useEffect(() => {
+    if (selectedImage && isOpen) {
+      const url = URL.createObjectURL(selectedImage)
+      setPreviewUrl(url)
+      return () => {
+        URL.revokeObjectURL(url)
+      }
+    } else {
+      setPreviewUrl(null)
+    }
+  }, [selectedImage, isOpen])
 
   // ダイアログが閉じられた時に状態をリセット
   useEffect(() => {
@@ -85,66 +101,83 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-        <div className="p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            アップロード内容の最終確認
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-3 z-50">
+      <div className="bg-white rounded-lg shadow-xl max-w-sm w-full max-h-[95vh] overflow-y-auto">
+        <div className="p-4">
+          <h3 className="text-base font-semibold text-gray-900 mb-3 text-center">
+            内容確認
           </h3>
           
-          <div className="space-y-4 text-sm">
-            {/* ファイル情報 */}
-            <div>
-              <h4 className="font-medium text-gray-700 mb-2">ファイル情報</h4>
-              <div className="bg-gray-50 p-3 rounded">
-                <p><span className="font-medium">ファイル名:</span> {fileName}</p>
-              </div>
-            </div>
-
-            {/* メタデータ */}
-            <div>
-              <h4 className="font-medium text-gray-700 mb-2">詳細情報</h4>
-              <div className="bg-gray-50 p-3 rounded space-y-1">
-                <p><span className="font-medium">名前:</span> {metadata.uploaderName}</p>
-                <p><span className="font-medium">コメント:</span> {metadata.comment || '（なし）'}</p>
+          <div className="space-y-3 text-sm">
+            {/* 画像プレビューと情報 */}
+            <div className="bg-gray-50 p-3 rounded">
+              <div className="flex gap-3">
+                {/* 小さなプレビュー画像 */}
+                {previewUrl && (
+                  <div className="flex-shrink-0">
+                    <img
+                      src={previewUrl}
+                      alt="プレビュー"
+                      className="w-16 h-16 object-cover rounded border"
+                    />
+                  </div>
+                )}
+                {/* ファイル・メタデータ情報 */}
+                <div className="flex-1 text-xs space-y-1">
+                  <p><span className="font-medium">ファイル:</span> {fileName.length > 15 ? `${fileName.substring(0, 15)}...` : fileName}</p>
+                  <p><span className="font-medium">名前:</span> {metadata.uploaderName}</p>
+                  {metadata.comment && (
+                    <p><span className="font-medium">コメント:</span> {metadata.comment.length > 25 ? `${metadata.comment.substring(0, 25)}...` : metadata.comment}</p>
+                  )}
+                </div>
               </div>
             </div>
 
             {/* 確認項目 */}
             <div>
-              <h4 className="font-medium text-gray-700 mb-3">確認項目</h4>
+              <h4 className="font-medium text-gray-700 mb-2">確認項目</h4>
               
               {loading ? (
-                <div className="bg-gray-50 p-3 rounded">
-                  <p className="text-sm text-gray-500">確認項目を読み込み中...</p>
+                <div className="bg-gray-50 p-2 rounded">
+                  <p className="text-xs text-gray-500">読み込み中...</p>
                 </div>
               ) : (
-                <div className="space-y-3">
-                  <div className="bg-gray-50 p-3 rounded space-y-3">
+                <div className="space-y-2">
+                  <div className="bg-gray-50 p-2 rounded space-y-2">
                     {checklistItems.map((item) => {
                       const isChecked = checkedItems[item.id] || false
                       
                       return (
                         <label
                           key={item.id}
-                          className={`flex items-start gap-3 text-sm cursor-pointer hover:bg-gray-100 p-2 rounded transition-colors ${
-                            isChecked ? 'bg-green-50 border border-green-200' : 'border border-transparent'
+                          className={`flex items-start gap-2 text-xs cursor-pointer hover:bg-gray-100 p-1 rounded transition-colors ${
+                            isChecked ? 'bg-green-50' : ''
                           }`}
                         >
-                          <input
-                            type="checkbox"
-                            checked={isChecked}
-                            onChange={(e) => handleCheckboxChange(item.id, e.target.checked)}
-                            className="mt-0.5 w-5 h-5 text-blue-600 bg-white border-2 border-gray-400 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer"
-                            style={{
-                              accentColor: '#3b82f6',
-                              transform: 'scale(1.2)'
-                            }}
-                          />
-                          <span className={`flex-1 leading-relaxed ${isChecked ? 'text-green-800 font-medium' : 'text-gray-700'}`}>
+                          <div className="relative flex-shrink-0 mt-0.5">
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={(e) => handleCheckboxChange(item.id, e.target.checked)}
+                              className="sr-only"
+                            />
+                            <div 
+                              className={`w-4 h-4 rounded border cursor-pointer transition-all duration-200 flex items-center justify-center ${
+                                isChecked 
+                                  ? 'bg-blue-600 border-blue-600' 
+                                  : 'bg-white border-gray-400 hover:border-blue-400'
+                              }`}
+                              onClick={() => handleCheckboxChange(item.id, !isChecked)}
+                            >
+                              {isChecked && (
+                                <i className="fas fa-check text-white text-xs"></i>
+                              )}
+                            </div>
+                          </div>
+                          <span className={`flex-1 leading-tight ${isChecked ? 'text-green-800 font-medium' : 'text-gray-700'}`}>
                             {item.text}
                             {item.required && (
-                              <span className="text-red-500 ml-1 font-bold">*</span>
+                              <span className="text-red-500 ml-1">*</span>
                             )}
                           </span>
                         </label>
@@ -152,42 +185,33 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
                     })}
                   </div>
                   
-                  {/* すべて同意ボタンを確認項目のすぐ下に配置 */}
+                  {/* すべて同意ボタンをコンパクトに */}
                   {checklistItems.length > 0 && (
-                    <div className="flex justify-center">
+                    <div className="text-center">
                       <button
                         type="button"
                         onClick={handleCheckAll}
-                        className={`px-6 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        className={`px-4 py-1 rounded text-xs font-bold transition-all ${
                           checklistItems.every(item => checkedItems[item.id])
                             ? 'bg-red-500 text-white hover:bg-red-600'
-                            : 'bg-blue-500 text-white hover:bg-blue-600'
+                            : 'bg-blue-600 text-white hover:bg-blue-700'
                         }`}
                       >
+                        <i className={`fas ${checklistItems.every(item => checkedItems[item.id]) ? 'fa-times' : 'fa-check-double'} mr-1`}></i>
                         {checklistItems.every(item => checkedItems[item.id]) ? '全て解除' : 'すべて同意'}
                       </button>
                     </div>
                   )}
-                  
-                  {/* 必須項目の説明 */}
-                  <p className="text-xs text-gray-500 text-center">
-                    <span className="text-red-500 font-bold">*</span> 印の項目は必須です
-                  </p>
                 </div>
               )}
             </div>
 
-            {/* 重要な注意事項 */}
-            <div className="bg-yellow-50 border border-yellow-200 p-3 rounded">
-              <h4 className="font-medium text-yellow-800 mb-2 flex items-center gap-2">
+            {/* 重要な注意事項をコンパクトに */}
+            <div className="bg-yellow-50 border border-yellow-200 p-2 rounded">
+              <p className="text-xs text-yellow-800 font-medium flex items-center gap-1">
                 <i className="fas fa-exclamation-triangle"></i>
-                重要な注意事項
-              </h4>
-              <ul className="text-xs text-yellow-700 space-y-1">
-                <li>• アップロード後の画像は即座にパブリックに公開されます</li>
-                <li>• JAWS-UG行動規範に沿わない内容は削除・注意の対象となります</li>
-                <li>• イベント終了後一定期間経過後に自動削除されます</li>
-              </ul>
+                画像は公開され、イベント終了後一定期間後に削除されます
+              </p>
             </div>
 
 
@@ -195,10 +219,10 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
 
           {/* バリデーションエラーメッセージ */}
           {!allRequiredChecked && checklistItems.some(item => item.required) && (
-            <div className="bg-red-50 border border-red-200 p-3 rounded-lg">
-              <div className="flex items-center gap-2 text-red-800">
-                <i className="fas fa-exclamation-triangle"></i>
-                <span className="font-medium text-sm">
+            <div className="bg-red-50 border border-red-200 p-2 rounded">
+              <div className="flex items-center gap-1 text-red-800">
+                <i className="fas fa-exclamation-triangle text-xs"></i>
+                <span className="font-medium text-xs">
                   必須項目にチェックを入れてください
                 </span>
               </div>
@@ -206,17 +230,17 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
           )}
 
           {/* ボタン */}
-          <div className="flex space-x-3 mt-6">
+          <div className="flex space-x-2 mt-4">
             <button
               onClick={onCancel}
-              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              className="flex-1 px-3 py-2 border border-gray-300 text-gray-700 rounded text-sm hover:bg-gray-50 transition-colors"
             >
               キャンセル
             </button>
             <button
               onClick={handleConfirm}
               disabled={!allRequiredChecked}
-              className={`flex-1 px-4 py-2 rounded-lg transition-colors font-medium ${
+              className={`flex-1 px-3 py-2 rounded text-sm transition-colors font-medium ${
                 allRequiredChecked
                   ? 'bg-blue-600 text-white hover:bg-blue-700'
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
