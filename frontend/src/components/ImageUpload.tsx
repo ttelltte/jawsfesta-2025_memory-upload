@@ -15,9 +15,11 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
 }) => {
   const [isDragOver, setIsDragOver] = useState(false)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [imageRotation, setImageRotation] = useState(0)
 
   const [isMobile, setIsMobile] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
 
 
   // モバイルデバイスの判定（シンプルに画面幅で判定）
@@ -106,14 +108,86 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
     }
   }
 
+  // 画像回転処理
+  const handleImageRotate = () => {
+    setImageRotation(prev => (prev + 90) % 360)
+  }
+
+  const handleImageReset = () => {
+    setImageRotation(0)
+  }
+
+  // 回転した画像をFileオブジェクトに変換
+  const rotateImageFile = useCallback(async (file: File, rotation: number): Promise<File> => {
+    if (rotation === 0) return file
+
+    return new Promise((resolve) => {
+      const canvas = document.createElement('canvas')
+      const ctx = canvas.getContext('2d')
+      const img = new Image()
+
+      img.onload = () => {
+        const { width, height } = img
+        
+        // 90度または270度回転の場合は幅と高さを入れ替え
+        if (rotation === 90 || rotation === 270) {
+          canvas.width = height
+          canvas.height = width
+        } else {
+          canvas.width = width
+          canvas.height = height
+        }
+
+        if (ctx) {
+          // 回転の中心を設定
+          ctx.translate(canvas.width / 2, canvas.height / 2)
+          ctx.rotate((rotation * Math.PI) / 180)
+          ctx.drawImage(img, -width / 2, -height / 2)
+        }
+
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const rotatedFile = new File([blob], file.name, {
+              type: file.type,
+              lastModified: Date.now()
+            })
+            resolve(rotatedFile)
+          }
+        }, file.type)
+      }
+
+      img.src = URL.createObjectURL(file)
+    })
+  }, [])
+
   // プレビュー削除
   const handleRemovePreview = () => {
     if (previewUrl) {
       URL.revokeObjectURL(previewUrl)
       setPreviewUrl(null)
     }
+    setImageRotation(0)
     onImageSelect(null as any) // 選択をクリア
     resetFileInputState() // ファイル入力の状態をリセット
+  }
+
+  // 回転適用処理
+  const handleApplyRotation = async () => {
+    if (selectedImage && imageRotation !== 0) {
+      // 回転を0にしてからファイル処理を行う（アニメーション防止）
+      const currentRotation = imageRotation
+      setImageRotation(0)
+      
+      const rotatedFile = await rotateImageFile(selectedImage, currentRotation)
+      onImageSelect(rotatedFile)
+      
+      // 新しいプレビューURLを生成
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl)
+      }
+      const newUrl = URL.createObjectURL(rotatedFile)
+      setPreviewUrl(newUrl)
+    }
   }
 
   return (
@@ -133,18 +207,69 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
               削除
             </button>
           </div>
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-shrink-0">
-              <img
-                src={previewUrl}
-                alt="プレビュー"
-                className="w-full sm:w-48 h-48 object-cover rounded-lg border"
-              />
+          <div className="flex flex-col gap-4">
+            {/* 画像プレビューエリア */}
+            <div className="flex justify-center">
+              <div className="relative">
+                <div 
+                  className="overflow-hidden rounded-lg border bg-gray-50 flex items-center justify-center"
+                  style={{
+                    width: '300px',
+                    height: '300px'
+                  }}
+                >
+                  <img
+                    src={previewUrl}
+                    alt="プレビュー"
+                    className="max-w-full max-h-full object-contain"
+                    style={{
+                      transform: `rotate(${imageRotation}deg)`,
+                      transition: imageRotation === 0 ? 'none' : 'transform 0.3s ease'
+                    }}
+                  />
+                </div>
+              </div>
             </div>
-            <div className="flex-1 space-y-2 text-sm text-gray-600">
-              <p><span className="font-medium">ファイル名:</span> {selectedImage.name}</p>
-              <p><span className="font-medium">サイズ:</span> {formatFileSize(selectedImage.size)}</p>
-              <p><span className="font-medium">形式:</span> {getFileTypeDescription(selectedImage.type)}</p>
+
+            {/* 回転コントロール */}
+            <div className="flex gap-2 justify-center">
+              <button
+                onClick={handleImageRotate}
+                className="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm hover:bg-blue-600 transition-colors flex items-center gap-2"
+              >
+                <i className="fas fa-redo"></i>
+                回転
+              </button>
+              {imageRotation !== 0 && (
+                <>
+                  <button
+                    onClick={handleImageReset}
+                    className="px-4 py-2 bg-gray-500 text-white rounded-lg text-sm hover:bg-gray-600 transition-colors flex items-center gap-2"
+                  >
+                    <i className="fas fa-undo"></i>
+                    リセット
+                  </button>
+                  <button
+                    onClick={handleApplyRotation}
+                    className="px-4 py-2 bg-green-500 text-white rounded-lg text-sm hover:bg-green-600 transition-colors flex items-center gap-2"
+                  >
+                    <i className="fas fa-check"></i>
+                    適用
+                  </button>
+                </>
+              )}
+            </div>
+
+            {/* ファイル情報 */}
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-gray-600">
+                <p><span className="font-medium">ファイル名:</span> {selectedImage.name}</p>
+                <p><span className="font-medium">サイズ:</span> {formatFileSize(selectedImage.size)}</p>
+                <p><span className="font-medium">形式:</span> {getFileTypeDescription(selectedImage.type)}</p>
+                {imageRotation !== 0 && (
+                  <p><span className="font-medium text-blue-600">回転:</span> <span className="text-blue-600 font-medium">{imageRotation}度</span></p>
+                )}
+              </div>
             </div>
           </div>
         </div>

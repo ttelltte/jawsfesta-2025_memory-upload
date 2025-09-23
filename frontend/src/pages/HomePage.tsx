@@ -100,6 +100,10 @@ export const HomePage: React.FC = () => {
   const [galleryError, setGalleryError] = useState<unknown>(null)
   const [layout, setLayout] = useState<LayoutType>('masonry')
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null)
+  
+  // ページネーション関連のstate
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(20)
 
   // アップロード関連の処理
   const handleImageSelect = (file: File | null) => {
@@ -176,6 +180,8 @@ export const HomePage: React.FC = () => {
         
         // ギャラリーを更新
         loadPhotos()
+        // 新しい画像は最新なので1ページ目に戻る
+        setCurrentPage(1)
         
       } else {
         const error = response.error || { code: 'UPLOAD_ERROR', message: 'アップロードに失敗しました' }
@@ -248,6 +254,24 @@ export const HomePage: React.FC = () => {
     setGalleryError(null)
     loadPhotos()
   }
+
+  // ページネーション関連の処理
+  const totalPages = Math.ceil(photos.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const currentPhotos = photos.slice(startIndex, endIndex)
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page)
+    document.getElementById('gallery-section')?.scrollIntoView({ behavior: 'smooth' })
+  }
+
+  const handleItemsPerPageChange = (newItemsPerPage: number) => {
+    setItemsPerPage(newItemsPerPage)
+    setCurrentPage(1) // 表示件数変更時は1ページ目に戻る
+  }
+
+
 
   // 初期化処理
   useEffect(() => {
@@ -359,35 +383,66 @@ export const HomePage: React.FC = () => {
         {/* ギャラリーセクション */}
         <div id="gallery-section">
           {!galleryLoading && !galleryError && photos.length > 0 && (
-            <div className="flex justify-between items-center mb-4">
-              <div className="text-gray-600 text-sm sm:text-base">
-                {photos.length}枚の思い出
+            <div className="bg-white rounded-lg shadow-sm border p-4 mb-6">
+              {/* 上段：思い出の件数 */}
+              <div className="flex items-center justify-center mb-4">
+                <div className="text-gray-700 font-medium text-base sm:text-lg">
+                  {photos.length}枚の思い出
+                </div>
               </div>
               
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-600 hidden sm:inline">表示:</span>
-                <button
-                  onClick={() => setLayout('masonry')}
-                  className={`px-2 sm:px-3 py-1 rounded-md text-xs sm:text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-1 ${
-                    layout === 'masonry'
-                      ? 'bg-blue-500 text-white'
-                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                  }`}
-                >
-                  <i className="fas fa-grip"></i>
-                  <span className="hidden sm:inline">マソンリー</span>
-                </button>
-                <button
-                  onClick={() => setLayout('grid')}
-                  className={`px-2 sm:px-3 py-1 rounded-md text-xs sm:text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-1 ${
-                    layout === 'grid'
-                      ? 'bg-blue-500 text-white'
-                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                  }`}
-                >
-                  <i className="fas fa-square"></i>
-                  <span className="hidden sm:inline">グリッド</span>
-                </button>
+              {/* 下段：コントロール */}
+              <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+                {/* 左側：表示件数選択 */}
+                <div className="flex items-center gap-3 bg-gray-50 px-4 py-2 rounded-lg">
+                  <i className="fas fa-list text-gray-500"></i>
+                  <span className="text-sm text-gray-600 font-medium">表示件数:</span>
+                  <select
+                    value={itemsPerPage}
+                    onChange={(e) => handleItemsPerPageChange(Number(e.target.value))}
+                    className="px-3 py-1 border border-gray-300 rounded-md text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value={12}>12件</option>
+                    <option value={20}>20件</option>
+                    <option value={36}>36件</option>
+                    <option value={50}>50件</option>
+                  </select>
+                </div>
+
+                {/* 中央：現在の表示範囲 */}
+                <div className="text-sm text-gray-500">
+                  {startIndex + 1}-{Math.min(endIndex, photos.length)}件を表示中
+                </div>
+                
+                {/* 右側：レイアウト切り替え */}
+                <div className="flex items-center gap-3 bg-gray-50 px-4 py-2 rounded-lg">
+                  <i className="fas fa-eye text-gray-500"></i>
+                  <span className="text-sm text-gray-600 font-medium">表示:</span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setLayout('masonry')}
+                      className={`px-3 py-1 rounded-md text-xs font-medium transition-all flex items-center gap-1 ${
+                        layout === 'masonry'
+                          ? 'bg-blue-500 text-white shadow-sm'
+                          : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
+                      }`}
+                    >
+                      <i className="fas fa-grip"></i>
+                      <span className="hidden sm:inline">マソンリー</span>
+                    </button>
+                    <button
+                      onClick={() => setLayout('grid')}
+                      className={`px-3 py-1 rounded-md text-xs font-medium transition-all flex items-center gap-1 ${
+                        layout === 'grid'
+                          ? 'bg-blue-500 text-white shadow-sm'
+                          : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
+                      }`}
+                    >
+                      <i className="fas fa-square"></i>
+                      <span className="hidden sm:inline">グリッド</span>
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           )}
@@ -410,10 +465,10 @@ export const HomePage: React.FC = () => {
           ) : (
             <>
               {layout === 'masonry' ? (
-                <MasonryLayout photos={photos} onImageClick={handleImageClick} />
+                <MasonryLayout photos={currentPhotos} onImageClick={handleImageClick} />
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-                  {photos.map((photo) => (
+                  {currentPhotos.map((photo) => (
                     <div 
                       key={photo.id}
                       className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer" 
@@ -480,6 +535,72 @@ export const HomePage: React.FC = () => {
                 </div>
               )}
             </>
+          )}
+
+          {/* ページネーション */}
+          {!galleryLoading && !galleryError && photos.length > 0 && totalPages > 1 && (
+            <div className="flex justify-center mt-8">
+              <div className="flex items-center gap-2">
+                {/* 前のページ */}
+                <button
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    currentPage === 1
+                      ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                      : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
+                  }`}
+                >
+                  <i className="fas fa-chevron-left mr-1"></i>
+                  前へ
+                </button>
+
+                {/* ページ番号 */}
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+                    let pageNum: number
+                    
+                    if (totalPages <= 7) {
+                      pageNum = i + 1
+                    } else if (currentPage <= 4) {
+                      pageNum = i + 1
+                    } else if (currentPage >= totalPages - 3) {
+                      pageNum = totalPages - 6 + i
+                    } else {
+                      pageNum = currentPage - 3 + i
+                    }
+
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => handlePageChange(pageNum)}
+                        className={`w-10 h-10 rounded-lg text-sm font-medium transition-colors ${
+                          currentPage === pageNum
+                            ? 'bg-blue-500 text-white'
+                            : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    )
+                  })}
+                </div>
+
+                {/* 次のページ */}
+                <button
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    currentPage === totalPages
+                      ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                      : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
+                  }`}
+                >
+                  次へ
+                  <i className="fas fa-chevron-right ml-1"></i>
+                </button>
+              </div>
+            </div>
           )}
         </div>
 
