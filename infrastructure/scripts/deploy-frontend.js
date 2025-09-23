@@ -122,7 +122,7 @@ function getFilesRecursively(dir, baseDir = dir) {
 }
 
 /**
- * S3バケットの既存ファイルをクリア
+ * S3バケットの既存ファイルをクリア（images/フォルダは除外）
  */
 async function clearS3Bucket() {
   console.log('🗑️  S3バケットの既存ファイルをクリア中...');
@@ -141,10 +141,20 @@ async function clearS3Bucket() {
       return;
     }
     
-    // オブジェクトを削除
-    console.log(`🗑️  ${listResponse.Contents.length} 個のファイルを削除中...`);
+    // images/フォルダ以外のオブジェクトをフィルタリング
+    const objectsToDelete = listResponse.Contents.filter(object => {
+      return object.Key && !object.Key.startsWith('images/');
+    });
     
-    for (const object of listResponse.Contents) {
+    if (objectsToDelete.length === 0) {
+      console.log('📭 削除対象のファイルはありません（images/フォルダは保持）。');
+      return;
+    }
+    
+    // オブジェクトを削除
+    console.log(`🗑️  ${objectsToDelete.length} 個のファイルを削除中...`);
+    
+    for (const object of objectsToDelete) {
       if (object.Key) {
         const deleteCommand = new DeleteObjectCommand({
           Bucket: BUCKET_NAME,
@@ -154,6 +164,12 @@ async function clearS3Bucket() {
         await s3Client.send(deleteCommand);
         console.log(`   削除: ${object.Key}`);
       }
+    }
+    
+    // 保持されたimages/ファイルの数を表示
+    const imagesCount = listResponse.Contents.length - objectsToDelete.length;
+    if (imagesCount > 0) {
+      console.log(`📷 images/フォルダ内の ${imagesCount} 個のファイルを保持しました。`);
     }
     
     console.log('✅ S3バケットのクリアが完了しました。');

@@ -46,13 +46,13 @@ export const MetadataForm: React.FC<MetadataFormProps> = ({
     const errors: Partial<MetadataFormData> = {}
     
     // 名前のバリデーション（任意だが、入力された場合は長さチェック）
-    if (formData.uploaderName.trim().length > 50) {
-      errors.uploaderName = '名前は50文字以内で入力してください'
+    if (formData.uploaderName.trim().length > 20) {
+      errors.uploaderName = '名前は20文字以内で入力してください'
     }
     
-    // コメントのバリデーション（任意だが、入力された場合は長さチェック）
-    if (formData.comment.trim().length > 500) {
-      errors.comment = 'コメントは500文字以内で入力してください'
+    // 一言のバリデーション（任意だが、入力された場合は長さチェック）
+    if (formData.comment.trim().length > 100) {
+      errors.comment = '一言は100文字以内で入力してください'
     }
     
     setValidationErrors(errors)
@@ -100,7 +100,7 @@ export const MetadataForm: React.FC<MetadataFormProps> = ({
             }
           `}
           disabled={isSubmitting || disabled}
-          maxLength={50}
+          maxLength={20}
           data-testid="uploader-name"
         />
         {validationErrors.uploaderName && (
@@ -111,17 +111,17 @@ export const MetadataForm: React.FC<MetadataFormProps> = ({
         </p>
       </div>
 
-      {/* コメント入力フィールド */}
+      {/* 一言入力フィールド */}
       <div>
         <label htmlFor="comment" className="block text-sm font-medium text-gray-700 mb-2">
-          コメント（任意）
+          一言（任意）
         </label>
         <textarea
           id="comment"
           value={formData.comment}
           onChange={(e) => handleInputChange('comment', e.target.value)}
-          placeholder="例: JAWS FESTA 2025で撮影しました！とても楽しかったです。"
-          rows={4}
+          placeholder="例: 楽しかった！最高のイベントでした。"
+          rows={3}
           className={`
             w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-vertical
             ${validationErrors.comment 
@@ -130,15 +130,15 @@ export const MetadataForm: React.FC<MetadataFormProps> = ({
             }
           `}
           disabled={isSubmitting || disabled}
-          maxLength={500}
+          maxLength={100}
           data-testid="comment"
         />
         {validationErrors.comment && (
           <p className="mt-1 text-sm text-red-600">{validationErrors.comment}</p>
         )}
         <div className="mt-1 flex justify-between text-xs text-gray-500">
-          <span>思い出や感想を自由にお書きください</span>
-          <span>{formData.comment.length}/500</span>
+          <span>思い出や感想を簡潔にお書きください</span>
+          <span>{formData.comment.length}/100</span>
         </div>
       </div>
 
