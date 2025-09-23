@@ -1,327 +1,226 @@
-# 🚀 JAWS FESTA 2025 思い出アップロード - デプロイガイド
+# 🚀 JAWS FESTA 2025 思い出アップロード - シンプルデプロイガイド
 
 ## 📋 概要
 
-このドキュメントは、JAWS FESTA 2025 思い出アップロードプロジェクトのAWSデプロイプロセスの完全ガイドです。
+このドキュメントは、JAWS FESTA 2025 思い出アップロードプロジェクトの**シンプルなデプロイ手順**を説明します。
 
-## 🎯 デプロイタイプ
-
-### 1. 初回デプロイ（Full Deploy）
-新しい環境への完全デプロイ
-
-### 2. 継続デプロイ（Incremental Deploy）
-- フロントエンドのみ
-- バックエンドのみ  
-- 設定データのみ
-
-## 📋 前提条件
+## 🎯 前提条件
 
 ### 必要なソフトウェア
+
 - **Node.js**: 18.x 以上
-- **npm**: 8.x 以上
+- **npm**: 8.x 以上  
 - **AWS CLI**: v2
-- **Git**: 最新版
+- **PowerShell**: Windows環境
 
 ### AWS設定
+
 ```bash
 # AWS認証情報の確認
 aws sts get-caller-identity
 
-# 出力例
-{
-    "UserId": "AIDA52S24SOFNDXSJHCOP",
-    "Account": "950452130698",
-    "Arn": "arn:aws:iam::950452130698:user/test-dev-cli-user"
-}
+# 正しいプロファイルに切り替え（必要に応じて）
+$env:AWS_PROFILE = "your-profile-name"
 ```
 
-## 🚀 初回デプロイ手順
+## 🚀 デプロイ手順
 
-### Step 1: 前提条件確認
+### ステップ1: 初回セットアップ（初回のみ）
+
 ```bash
-# Node.js バージョン確認
-node --version  # 18.x 以上
-
-# AWS認証確認
-aws sts get-caller-identity
-
-# リージョン確認
-aws configure get region  # ap-northeast-1
-```
-
-### Step 2: 依存関係インストール
-```bash
-# ルート依存関係
+# 1. 依存関係インストール
+cd infrastructure
 npm install
 
-# フロントエンド依存関係
-cd frontend && npm install && cd ..
+cd ../frontend  
+npm install
 
-# バックエンド依存関係
-cd backend && npm install && cd ..
+cd ../backend
+npm install
 
-# インフラストラクチャ依存関係
-cd infrastructure && npm install && cd ..
-```
-
-### Step 3: 設定ファイル確認
-```bash
-# 開発環境設定確認
-cat config/dev.json
-
-# 必要に応じて設定を調整
-# - account: AWSアカウントID
-# - region: デプロイリージョン
-# - profile: AWSプロファイル
-```
-
-### Step 4: CDK Bootstrap（初回のみ）
-```bash
-cd infrastructure
-npx cdk bootstrap
-```
-
-### Step 5: インフラストラクチャデプロイ
-```bash
-cd infrastructure
-npm run build
-npx cdk deploy --require-approval never
-```
-
-**デプロイ完了時の出力例:**
-```
-✅  JawsFestaMemoryUploadDev
-
-Outputs:
-JawsFestaMemoryUploadDev.ApiGatewayUrl = https://z508wunfnl.execute-api.ap-northeast-1.amazonaws.com/dev/
-JawsFestaMemoryUploadDev.CloudFrontDistributionId = E2B3V7FM1IT2W2
-JawsFestaMemoryUploadDev.WebsiteUrl = https://d13e8l3unbz1vd.cloudfront.net
-```
-
-### Step 6: 初期データ投入
-```bash
-cd infrastructure
-npm run setup-data:dev
-```
-
-### Step 7: フロントエンドビルド・デプロイ
-```bash
-# フロントエンドビルド
-cd frontend
-npm run build
-
-# S3にデプロイ
+# 2. CDK Bootstrap（初回のみ）
 cd ../infrastructure
-npm run deploy-frontend:dev
+npx cdk bootstrap
+
+# 3. インフラ＋バックエンドデプロイ
+npm run deploy:dev
 ```
 
-### Step 8: CloudFrontキャッシュ無効化
-```bash
-# 設定ファイルにDistribution IDを追加
-# config/dev.json に "cloudFrontDistributionId": "E2B3V7FM1IT2W2" を追加
+### ステップ2: 完全自動デプロイ
 
+```bash
+# 初回デプロイ（インフラ + フロントエンド）
+powershell -ExecutionPolicy Bypass -File deploy-complete.ps1
+
+# フロントエンドのみ更新
+powershell -ExecutionPolicy Bypass -File deploy.ps1
+```
+
+**これだけです！** 🎉
+
+### 🔧 自動化の仕組み
+
+- **環境変数自動更新**: AWS CloudFormationから最新のURLを取得
+- **設定ファイル自動更新**: CloudFront Distribution IDを自動設定
+- **ハードコーディング撲滅**: 手動でURLを設定する必要なし
+
+## 📁 作成されたファイル
+
+- `deploy.ps1` - シンプルなフロントエンドデプロイスクリプト
+
+## 🔄 日常的な更新
+
+### フロントエンドのみ更新する場合
+
+```bash
+powershell -ExecutionPolicy Bypass -File deploy.ps1
+```
+
+### バックエンド（Lambda関数）も更新する場合
+
+```bash
+# 1. インフラ＋バックエンド更新
 cd infrastructure
-npm run cloudfront:invalidate
+npm run deploy:dev
+
+# 2. フロントエンド更新  
+cd ..
+powershell -ExecutionPolicy Bypass -File deploy.ps1
 ```
 
-### Step 9: 動作確認
-```bash
-# API動作確認
-curl https://z508wunfnl.execute-api.ap-northeast-1.amazonaws.com/dev/api/config
+### 📝 重要な注意点
 
-# ウェブサイトアクセス
-# https://d13e8l3unbz1vd.cloudfront.net
-```
+- **バックエンド（Lambda関数）**: CDKデプロイ（`npm run deploy:dev`）に含まれます
+- **フロントエンド（React）**: 別途S3にデプロイが必要です（`deploy.ps1`）
+- **インフラ（AWS リソース）**: CDKデプロイで作成・更新されます
 
-## 🔄 継続デプロイ手順
+## 🛠️ deploy.ps1 の内容
 
-### フロントエンドのみ更新
-```bash
-cd infrastructure
-npm run deploy-frontend:build  # ビルド＋デプロイ
-npm run cloudfront:invalidate  # キャッシュ無効化
-```
+```powershell
+# JAWS FESTA Memory Upload - Simple Deploy
+Write-Host "Starting deployment..." -ForegroundColor Green
 
-### バックエンドのみ更新
-```bash
-cd infrastructure
+# Get S3 bucket name
+Write-Host "Getting S3 bucket name..." -ForegroundColor Yellow
+$bucketName = aws cloudformation describe-stacks --stack-name JawsFestaMemoryUploadDev --query "Stacks[0].Outputs[?OutputKey=='PhotosBucketName'].OutputValue" --output text
+
+if ([string]::IsNullOrEmpty($bucketName)) {
+    Write-Host "Failed to get S3 bucket name" -ForegroundColor Red
+    exit 1
+}
+
+Write-Host "S3 Bucket: $bucketName" -ForegroundColor Green
+
+# Build frontend
+Write-Host "Building frontend..." -ForegroundColor Yellow
+Set-Location frontend
 npm run build
-npx cdk deploy --require-approval never
-```
 
-### 設定データのみ更新
-```bash
-cd infrastructure
-npm run setup-data:force  # 強制上書き
-```
+# Upload to S3
+Write-Host "Uploading to S3..." -ForegroundColor Yellow
+aws s3 sync dist/ s3://$bucketName --delete --exclude "images/*"
 
-### 全体更新
-```bash
-cd infrastructure
-npm run deploy:dev
-npm run deploy-frontend:build
-npm run cloudfront:invalidate
-```
-
-## 🌍 環境別デプロイ
-
-### 開発環境（dev）
-```bash
-export AWS_PROFILE=default
-cd infrastructure
-npm run deploy:dev
-npm run deploy-frontend:dev
-```
-
-### 本番環境（prod）
-```bash
-export AWS_PROFILE=prod
-cd infrastructure
-npm run deploy:prod
-npm run deploy-frontend:prod
-```
-
-## 🛠️ 便利なコマンド
-
-### 設定確認
-```bash
-cd infrastructure
-npm run show-config          # 現在の設定表示
-npm run show-config:prod     # 本番環境設定表示
-```
-
-### CloudFront管理
-```bash
-cd infrastructure
-npm run cloudfront:invalidate     # キャッシュ無効化
-npm run cloudfront:status         # 無効化状況確認
-npm run cloudfront:tips           # 最適化ヒント表示
-```
-
-### スタック管理
-```bash
-cd infrastructure
-npm run diff:dev             # 変更差分確認
-npm run synth:dev           # CloudFormationテンプレート生成
-npm run destroy:dev         # スタック削除（注意！）
+Set-Location ..
+Write-Host "Deploy completed!" -ForegroundColor Green
 ```
 
 ## 🚨 トラブルシューティング
 
 ### よくあるエラーと解決方法
 
-#### 1. 依存関係エラー
+#### 1. S3バケット名が取得できない
+
 ```bash
-# エラー: Cannot find module 'esbuild'
+# 原因: CDKデプロイが完了していない
+# 解決: インフラを先にデプロイ
+cd infrastructure
+npm run deploy:dev
+```
+
+#### 2. フロントエンドビルドエラー
+
+```bash
+# 原因: 依存関係の問題
+# 解決: 依存関係を再インストール
 cd frontend
-rm -rf node_modules package-lock.json
+Remove-Item -Recurse -Force node_modules, package-lock.json -ErrorAction SilentlyContinue
 npm install
 ```
 
-#### 2. 権限エラー
+#### 3. AWS認証エラー
+
 ```bash
-# エラー: User is not authorized to perform
-# 解決: IAMユーザーに PowerUserAccess 権限を付与
-aws iam list-attached-user-policies --user-name YOUR_USERNAME
+# 原因: 認証情報が設定されていない
+# 解決: プロファイルを設定
+$env:AWS_PROFILE = "your-profile-name"
+aws sts get-caller-identity
 ```
 
-#### 3. CDK Bootstrap エラー
+#### 4. PowerShell実行ポリシーエラー
+
 ```bash
-# エラー: This stack uses assets, so the toolkit stack must be deployed
-npx cdk bootstrap aws://ACCOUNT_ID/REGION
+# 原因: PowerShellの実行ポリシー
+# 解決: 実行ポリシーを一時的に変更
+powershell -ExecutionPolicy Bypass -File deploy.ps1
 ```
 
-#### 4. ファイルロックエラー（Windows）
+#### 5. バックエンドAPI エラー
+
 ```bash
-# エラー: EPERM: operation not permitted
-# 解決: 手動でビルドしてからデプロイ
-cd frontend
-npm run build
+# 原因: Lambda関数のデプロイが失敗
+# 解決: バックエンドの依存関係を確認してCDK再デプロイ
+cd backend
+npm install
 cd ../infrastructure
-npm run deploy-frontend:dev
-```
-
-#### 5. CloudFrontキャッシュエラー
-```bash
-# エラー: CloudFront Distribution ID が設定されていません
-# 解決: config/dev.json に Distribution ID を追加
-{
-  "cloudFrontDistributionId": "E2B3V7FM1IT2W2"
-}
+npm run deploy:dev
 ```
 
 ## 📊 デプロイ結果の確認
 
 ### 作成されるAWSリソース
 
-| リソース         | 用途                             | 例                                                         |
-| ---------------- | -------------------------------- | ---------------------------------------------------------- |
-| S3 Bucket        | 画像保存・静的サイトホスティング | jawsfestamemoryuploaddev-photosbucket2ac9d1f0-dsxgalzcz168 |
-| DynamoDB Tables  | データ保存                       | Photos, Config                                             |
-| Lambda Functions | API処理                          | Upload, List, Config                                       |
-| API Gateway      | REST API                         | https://xxx.execute-api.ap-northeast-1.amazonaws.com/dev/  |
-| CloudFront       | CDN                              | https://xxx.cloudfront.net                                 |
+| リソース             | 用途                             | デプロイ方法   | 例                                                          |
+| -------------------- | -------------------------------- | -------------- | ----------------------------------------------------------- |
+| S3 Bucket            | 画像保存・静的サイトホスティング | CDK            | `jawsfestamemoryuploaddev-photosbucket2ac9d1f0-xxx`         |
+| DynamoDB Tables      | データ保存                       | CDK            | Photos, Config                                              |
+| **Lambda Functions** | **バックエンドAPI処理**          | **CDK**        | **Upload, List, Config, AdminUpdate, AdminDelete**          |
+| API Gateway          | REST API                         | CDK            | `https://xxx.execute-api.ap-northeast-1.amazonaws.com/dev/` |
+| CloudFront           | CDN                              | CDK            | `https://xxx.cloudfront.net`                                |
+| **React App**        | **フロントエンド**               | **deploy.ps1** | **S3にデプロイされる静的ファイル**                          |
 
-### アクセスURL
+### アクセスURL確認
 
-- **メインサイト**: https://d13e8l3unbz1vd.cloudfront.net
-- **API エンドポイント**: https://z508wunfnl.execute-api.ap-northeast-1.amazonaws.com/dev/
-- **S3 Website**: http://jawsfestamemoryuploaddev-photosbucket2ac9d1f0-dsxgalzcz168.s3-website-ap-northeast-1.amazonaws.com
+```bash
+# CDKデプロイ後に表示されるURL
+# WebsiteUrl: https://xxx.cloudfront.net
+# ApiGatewayUrl: https://xxx.execute-api.ap-northeast-1.amazonaws.com/dev/
+```
 
-## 🔒 セキュリティ考慮事項
+## 🎯 なぜシンプルにしたのか
 
-### 認証情報管理
-- AWS認証情報をコードにハードコーディングしない
-- 環境変数またはAWS CLIプロファイルを使用
-- 定期的なアクセスキーローテーション
+従来のデプロイプロセスは複雑すぎました：
 
-### 権限設定
-- 最小権限の原則を適用
-- 本番環境では専用IAMロールを使用
-- MFA（多要素認証）の有効化
+- ❌ 複数のnpmスクリプト
+- ❌ 複雑な設定ファイル管理
+- ❌ CDK出力ファイルの依存関係
+- ❌ 多段階のコマンド実行
 
-### ネットワークセキュリティ
-- S3バケットのパブリックアクセス制限
-- API GatewayのCORS設定
-- CloudFrontのアクセス制御
+新しいプロセスは：
 
-## 📈 パフォーマンス最適化
-
-### ビルド最適化
-- 依存関係キャッシュの活用
-- 並列ビルドの実行
-- 増分ビルドの実装
-
-### デプロイ最適化
-- 変更検出による部分デプロイ
-- 並列アップロード
-- キャッシュ戦略の最適化
-
-### 運用最適化
-- CloudWatch監視の設定
-- 自動スケーリングの設定
-- コスト最適化の実装
+- ✅ 1つのPowerShellスクリプト
+- ✅ AWS CLIから直接情報取得
+- ✅ シンプルな手順
+- ✅ エラーハンドリング
 
 ## 📞 サポート
 
-### 問題報告
-- [GitHub Issues](https://github.com/ttelltte/jawsfesta-2025_memory-upload/issues)
-- 問題の詳細、エラーメッセージ、実行環境を記載
+問題が発生した場合：
 
-### 緊急時対応
-1. 即座にサービス停止
-2. 問題の影響範囲特定
-3. ログの保存
-4. 管理者への連絡
-
-## 📚 関連ドキュメント
-
-- [README.md](README.md) - プロジェクト概要
-- [SETUP.md](SETUP.md) - 初期セットアップ
-- [ENVIRONMENT_SETUP.md](ENVIRONMENT_SETUP.md) - 環境設定詳細
-- [TROUBLESHOOTING.md](TROUBLESHOOTING.md) - トラブルシューティング詳細
+1. エラーメッセージを確認
+2. トラブルシューティングセクションを参照
+3. それでも解決しない場合は、エラーメッセージと実行環境を記録して報告
 
 ---
 
-**最終更新**: 2025年9月22日  
-**バージョン**: 1.0.0
+**最終更新**: 2025年9月24日  
+**バージョン**: 2.0.0 (シンプル版)

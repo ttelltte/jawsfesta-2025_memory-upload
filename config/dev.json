@@ -3,17 +3,15 @@
   "environment": "dev",
   "region": "ap-northeast-1",
   "account": "375057248858",
-  "profile": "default",
-  "domainName": "",
-  "certificateArn": "",
+  "profile": "",
+  "domainName": "festa2025.jaws-private-dev.link",
+  "certificateArn": "arn:aws:acm:us-east-1:375057248858:certificate/912de551-68cc-4afa-b5e4-d9f060840b9f",
   "s3": {
     "bucketName": "",
     "corsAllowedOrigins": [
-      "http://festa2025.jaws-private-dev.link",
       "https://festa2025.jaws-private-dev.link",
       "http://localhost:3000",
-      "http://localhost:5173",
-      "https://d13e8l3unbz1vd.cloudfront.net"
+      "http://localhost:5173"
     ],
     "presignedUrlExpiry": "3600"
   },
@@ -29,11 +27,9 @@
   },
   "apiGateway": {
     "corsAllowedOrigins": [
-      "http://festa2025.jaws-private-dev.link",
       "https://festa2025.jaws-private-dev.link",
       "http://localhost:3000",
-      "http://localhost:5173",
-      "https://d13e8l3unbz1vd.cloudfront.net"
+      "http://localhost:5173"
     ],
     "corsAllowedMethods": [
       "GET",
@@ -51,9 +47,14 @@
   },
   "cloudfront": {
     "priceClass": "PriceClass_200",
-    "cachePolicyId": "4135ea2d-6df8-44a3-9df3-4b5a84be39ad"
+    "cachePolicyId": "4135ea2d-6df8-44a3-9df3-4b5a84be39ad",
+    "customDomain": {
+      "enabled": true,
+      "domainName": "festa2025.jaws-private-dev.link",
+      "certificateArn": "arn:aws:acm:us-east-1:375057248858:certificate/912de551-68cc-4afa-b5e4-d9f060840b9f"
+    }
   },
-  "cloudFrontDistributionId": "E2B3V7FM1IT2W2",
+  "cloudFrontDistributionId": "E3C5VWU6YZ9PPK",
   "upload": {
     "maxFileSize": "10485760",
     "allowedFileTypes": "image/*",

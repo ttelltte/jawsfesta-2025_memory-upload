@@ -6,6 +6,7 @@ import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import * as iam from 'aws-cdk-lib/aws-iam';
+import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 
 import { Construct } from 'constructs';
 import * as path from 'path';
@@ -39,11 +40,11 @@ export class MemoryUploadStack extends cdk.Stack {
     this.photosBucket = new s3.Bucket(this, 'PhotosBucket', {
       // バケット名は自動生成（重複回避）
       bucketName: config.s3?.bucketName || undefined,
-      
+
       // 静的サイトホスティング設定
       websiteIndexDocument: 'index.html',
       websiteErrorDocument: 'index.html', // SPAのため404もindex.htmlにリダイレクト
-      
+
       // パブリック読み取りアクセス設定
       publicReadAccess: true,
       blockPublicAccess: new s3.BlockPublicAccess({
@@ -52,7 +53,7 @@ export class MemoryUploadStack extends cdk.Stack {
         ignorePublicAcls: false,
         restrictPublicBuckets: false,
       }),
-      
+
       // CORS設定（フロントエンドからのアクセス用）
       cors: [
         {
@@ -68,7 +69,7 @@ export class MemoryUploadStack extends cdk.Stack {
           maxAge: 3000,
         },
       ],
-      
+
       // ライフサイクル設定
       lifecycleRules: [
         {
@@ -82,12 +83,12 @@ export class MemoryUploadStack extends cdk.Stack {
           prefix: 'images/', // 画像フォルダのみ対象
         }] : []),
       ],
-      
+
       // 削除保護（本番環境では重要）
-      removalPolicy: environment === 'prod' 
-        ? cdk.RemovalPolicy.RETAIN 
+      removalPolicy: environment === 'prod'
+        ? cdk.RemovalPolicy.RETAIN
         : cdk.RemovalPolicy.DESTROY,
-      
+
       // バージョニング（本番環境では有効化）
       versioned: environment === 'prod',
     });
@@ -97,36 +98,36 @@ export class MemoryUploadStack extends cdk.Stack {
     // ===========================================
     this.photosTable = new dynamodb.Table(this, 'PhotosTable', {
       tableName: config.dynamodb?.photosTableName || undefined,
-      
+
       // パーティションキーとソートキー
       partitionKey: {
         name: 'PK',
         type: dynamodb.AttributeType.STRING,
       },
       sortKey: {
-        name: 'SK', 
+        name: 'SK',
         type: dynamodb.AttributeType.STRING,
       },
-      
+
       // TTL設定（30日後の自動削除）
       timeToLiveAttribute: 'ttl',
-      
+
       // 課金モード（開発環境はオンデマンド、本番環境はプロビジョンド）
-      billingMode: environment === 'prod' 
+      billingMode: environment === 'prod'
         ? dynamodb.BillingMode.PROVISIONED
         : dynamodb.BillingMode.PAY_PER_REQUEST,
-      
+
       // 本番環境の場合のプロビジョンドキャパシティ
       ...(environment === 'prod' && {
         readCapacity: 5,
         writeCapacity: 5,
       }),
-      
+
       // 削除保護
-      removalPolicy: environment === 'prod' 
-        ? cdk.RemovalPolicy.RETAIN 
+      removalPolicy: environment === 'prod'
+        ? cdk.RemovalPolicy.RETAIN
         : cdk.RemovalPolicy.DESTROY,
-      
+
       // ポイントインタイムリカバリ（本番環境では有効化）
       pointInTimeRecoverySpecification: {
         pointInTimeRecoveryEnabled: environment === 'prod',
@@ -152,7 +153,7 @@ export class MemoryUploadStack extends cdk.Stack {
     // ===========================================
     this.configTable = new dynamodb.Table(this, 'ConfigTable', {
       tableName: config.dynamodb?.configTableName || undefined,
-      
+
       // パーティションキーとソートキー
       partitionKey: {
         name: 'PK',
@@ -162,15 +163,15 @@ export class MemoryUploadStack extends cdk.Stack {
         name: 'SK',
         type: dynamodb.AttributeType.STRING,
       },
-      
+
       // 課金モード（設定データは少量なのでオンデマンド）
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-      
+
       // 削除保護
-      removalPolicy: environment === 'prod' 
-        ? cdk.RemovalPolicy.RETAIN 
+      removalPolicy: environment === 'prod'
+        ? cdk.RemovalPolicy.RETAIN
         : cdk.RemovalPolicy.DESTROY,
-      
+
       // ポイントインタイムリカバリ（本番環境では有効化）
       pointInTimeRecoverySpecification: {
         pointInTimeRecoveryEnabled: environment === 'prod',
@@ -180,7 +181,7 @@ export class MemoryUploadStack extends cdk.Stack {
     // ===========================================
     // Lambda Functions
     // ===========================================
-    
+
     // Upload Lambda 関数
     this.uploadFunction = new lambda.Function(this, 'UploadFunction', {
       runtime: lambda.Runtime.NODEJS_18_X,
@@ -192,25 +193,25 @@ export class MemoryUploadStack extends cdk.Stack {
         // DynamoDB テーブル名
         PHOTOS_TABLE_NAME: this.photosTable.tableName,
         CONFIG_TABLE_NAME: this.configTable.tableName,
-        
+
         // S3 バケット名
         PHOTOS_BUCKET_NAME: this.photosBucket.bucketName,
-        
+
         // 環境設定
         ENVIRONMENT: environment,
         REGION: this.region,
-        
+
         // アプリケーション設定
         MAX_FILE_SIZE: config.upload?.maxFileSize || '10485760', // 10MB
         ALLOWED_FILE_TYPES: config.upload?.allowedFileTypes || 'image/*',
         TTL_DAYS: config.upload?.ttlDays || '30',
-        
+
         // ログレベル
         LOG_LEVEL: config.logging?.level || (environment === 'prod' ? 'WARN' : 'DEBUG'),
-        
+
         // CORS設定
         CORS_ALLOWED_ORIGINS: JSON.stringify(
-          config.apiGateway?.corsAllowedOrigins || 
+          config.apiGateway?.corsAllowedOrigins ||
           (environment === 'prod' ? ['https://your-domain.com'] : ['*'])
         ),
       },
@@ -227,24 +228,24 @@ export class MemoryUploadStack extends cdk.Stack {
       environment: {
         // DynamoDB テーブル名
         PHOTOS_TABLE_NAME: this.photosTable.tableName,
-        
+
         // S3 バケット名
         PHOTOS_BUCKET_NAME: this.photosBucket.bucketName,
-        
+
         // 環境設定
         ENVIRONMENT: environment,
         REGION: this.region,
-        
+
         // アプリケーション設定
         PRESIGNED_URL_EXPIRY: config.s3?.presignedUrlExpiry || '3600', // 1時間
         MAX_ITEMS_PER_PAGE: config.pagination?.maxItemsPerPage || '50',
-        
+
         // ログレベル
         LOG_LEVEL: config.logging?.level || (environment === 'prod' ? 'WARN' : 'DEBUG'),
-        
+
         // CORS設定
         CORS_ALLOWED_ORIGINS: JSON.stringify(
-          config.apiGateway?.corsAllowedOrigins || 
+          config.apiGateway?.corsAllowedOrigins ||
           (environment === 'prod' ? ['https://your-domain.com'] : ['*'])
         ),
       },
@@ -261,20 +262,20 @@ export class MemoryUploadStack extends cdk.Stack {
       environment: {
         // DynamoDB テーブル名
         CONFIG_TABLE_NAME: this.configTable.tableName,
-        
+
         // 環境設定
         ENVIRONMENT: environment,
         REGION: this.region,
-        
+
         // キャッシュ設定
         CACHE_TTL: config.cache?.configTtl || '300', // 5分
-        
+
         // ログレベル
         LOG_LEVEL: config.logging?.level || (environment === 'prod' ? 'WARN' : 'DEBUG'),
-        
+
         // CORS設定
         CORS_ALLOWED_ORIGINS: JSON.stringify(
-          config.apiGateway?.corsAllowedOrigins || 
+          config.apiGateway?.corsAllowedOrigins ||
           (environment === 'prod' ? ['https://your-domain.com'] : ['*'])
         ),
       },
@@ -291,23 +292,23 @@ export class MemoryUploadStack extends cdk.Stack {
       environment: {
         // DynamoDB テーブル名
         PHOTOS_TABLE_NAME: this.photosTable.tableName,
-        
+
         // S3 バケット名
         PHOTOS_BUCKET_NAME: this.photosBucket.bucketName,
-        
+
         // 管理者パスワード
         ADMIN_PASSWORD: config.admin?.password || '19931124',
-        
+
         // 環境設定
         ENVIRONMENT: environment,
         REGION: this.region,
-        
+
         // ログレベル
         LOG_LEVEL: config.logging?.level || (environment === 'prod' ? 'WARN' : 'DEBUG'),
-        
+
         // CORS設定
         CORS_ALLOWED_ORIGINS: JSON.stringify(
-          config.apiGateway?.corsAllowedOrigins || 
+          config.apiGateway?.corsAllowedOrigins ||
           (environment === 'prod' ? ['https://your-domain.com'] : ['*'])
         ),
       },
@@ -324,23 +325,23 @@ export class MemoryUploadStack extends cdk.Stack {
       environment: {
         // DynamoDB テーブル名
         PHOTOS_TABLE_NAME: this.photosTable.tableName,
-        
+
         // S3 バケット名
         PHOTOS_BUCKET_NAME: this.photosBucket.bucketName,
-        
+
         // 管理者パスワード
         ADMIN_PASSWORD: config.admin?.password || '19931124',
-        
+
         // 環境設定
         ENVIRONMENT: environment,
         REGION: this.region,
-        
+
         // ログレベル
         LOG_LEVEL: config.logging?.level || (environment === 'prod' ? 'WARN' : 'DEBUG'),
-        
+
         // CORS設定
         CORS_ALLOWED_ORIGINS: JSON.stringify(
-          config.apiGateway?.corsAllowedOrigins || 
+          config.apiGateway?.corsAllowedOrigins ||
           (environment === 'prod' ? ['https://your-domain.com'] : ['*'])
         ),
       },
@@ -350,15 +351,15 @@ export class MemoryUploadStack extends cdk.Stack {
     // ===========================================
     // IAM 権限設定（最小権限の原則）
     // ===========================================
-    
+
     // Upload Lambda の権限
     // S3: 画像アップロード用の最小権限（imagesフォルダのみ）
     this.photosBucket.grantPut(this.uploadFunction, 'images/*');
     this.photosBucket.grantPutAcl(this.uploadFunction, 'images/*');
-    
+
     // DynamoDB: Photos テーブルへの書き込み権限
     this.photosTable.grantWriteData(this.uploadFunction);
-    
+
     // DynamoDB: Config テーブルからの読み取り権限
     this.configTable.grantReadData(this.uploadFunction);
 
@@ -385,7 +386,7 @@ export class MemoryUploadStack extends cdk.Stack {
     // List Lambda の権限
     // S3: 画像読み取り用の最小権限（Presigned URL生成用）
     this.photosBucket.grantRead(this.listFunction, 'images/*');
-    
+
     // DynamoDB: Photos テーブルからの読み取り権限（GSI含む）
     this.photosTable.grantReadData(this.listFunction);
 
@@ -407,14 +408,14 @@ export class MemoryUploadStack extends cdk.Stack {
     // Admin Delete Lambda の権限
     // S3: 画像削除権限（imagesフォルダのみ）
     this.photosBucket.grantDelete(this.adminDeleteFunction, 'images/*');
-    
+
     // DynamoDB: Photos テーブルの読み取り・削除権限
     this.photosTable.grantReadWriteData(this.adminDeleteFunction);
 
     // Admin Update Lambda の権限
     // S3: 画像読み取り・更新権限（imagesフォルダのみ）
     this.photosBucket.grantReadWrite(this.adminUpdateFunction, 'images/*');
-    
+
     // DynamoDB: Photos テーブルの読み取り・更新権限
     this.photosTable.grantReadWriteData(this.adminUpdateFunction);
 
@@ -457,14 +458,14 @@ export class MemoryUploadStack extends cdk.Stack {
     // ===========================================
     // API Gateway
     // ===========================================
-    
+
     this.api = new apigateway.RestApi(this, 'MemoryUploadApi', {
       restApiName: `JAWS FESTA Memory Upload API (${environment})`,
       description: 'API for JAWS FESTA Memory Upload application',
-      
+
       // CORS設定 - セキュリティを考慮した基本設定
       defaultCorsPreflightOptions: {
-        allowOrigins: config.apiGateway?.corsAllowedOrigins || 
+        allowOrigins: config.apiGateway?.corsAllowedOrigins ||
           (environment === 'prod' ? ['https://your-domain.com'] : apigateway.Cors.ALL_ORIGINS),
         allowMethods: config.apiGateway?.corsAllowedMethods || ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
         allowHeaders: config.apiGateway?.corsAllowedHeaders || [
@@ -477,15 +478,15 @@ export class MemoryUploadStack extends cdk.Stack {
         ],
         maxAge: cdk.Duration.seconds(86400), // 24時間キャッシュ
       },
-      
+
       // バイナリメディアタイプ（画像アップロード用）
       binaryMediaTypes: ['image/*', 'multipart/form-data'],
-      
+
       // エンドポイント設定
       endpointConfiguration: {
         types: [apigateway.EndpointType.REGIONAL],
       },
-      
+
       // CloudWatch ログ設定
       cloudWatchRole: true,
       deployOptions: {
@@ -496,10 +497,10 @@ export class MemoryUploadStack extends cdk.Stack {
         throttlingRateLimit: 100, // リクエスト制限
         throttlingBurstLimit: 200,
       },
-      
+
       // 失敗時の設定
       failOnWarnings: false,
-      
+
       // API キー設定（将来の拡張用）
       apiKeySourceType: apigateway.ApiKeySourceType.HEADER,
     });
@@ -507,7 +508,7 @@ export class MemoryUploadStack extends cdk.Stack {
     // API リソースとメソッドの設定
     const apiResource = this.api.root.addResource('api', {
       defaultCorsPreflightOptions: {
-        allowOrigins: config.apiGateway?.corsAllowedOrigins || 
+        allowOrigins: config.apiGateway?.corsAllowedOrigins ||
           (environment === 'prod' ? ['https://your-domain.com'] : apigateway.Cors.ALL_ORIGINS),
         allowMethods: config.apiGateway?.corsAllowedMethods || ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
         allowHeaders: config.apiGateway?.corsAllowedHeaders || [
@@ -520,21 +521,21 @@ export class MemoryUploadStack extends cdk.Stack {
         ],
       },
     });
-    
+
     // /api/upload エンドポイント - 画像アップロード用
     const uploadResource = apiResource.addResource('upload');
     uploadResource.addMethod('POST', new apigateway.LambdaIntegration(this.uploadFunction, {
       // プロキシ統合を使用してシンプルに設定
       proxy: true,
     }));
-    
+
     // /api/photos エンドポイント - 画像一覧取得用
     const photosResource = apiResource.addResource('photos');
     photosResource.addMethod('GET', new apigateway.LambdaIntegration(this.listFunction, {
       // プロキシ統合を使用してシンプルに設定
       proxy: true,
     }));
-    
+
     // /api/config エンドポイント - 確認項目設定取得用
     const configResource = apiResource.addResource('config');
     configResource.addMethod('GET', new apigateway.LambdaIntegration(this.configFunction, {
@@ -545,7 +546,7 @@ export class MemoryUploadStack extends cdk.Stack {
     // /api/admin エンドポイント - 管理者機能用
     const adminResource = apiResource.addResource('admin', {
       defaultCorsPreflightOptions: {
-        allowOrigins: config.apiGateway?.corsAllowedOrigins || 
+        allowOrigins: config.apiGateway?.corsAllowedOrigins ||
           (environment === 'prod' ? ['https://your-domain.com'] : apigateway.Cors.ALL_ORIGINS),
         allowMethods: ['PATCH', 'DELETE', 'OPTIONS'],
         allowHeaders: [
@@ -558,10 +559,10 @@ export class MemoryUploadStack extends cdk.Stack {
         ],
       },
     });
-    
+
     const adminPhotosResource = adminResource.addResource('photos', {
       defaultCorsPreflightOptions: {
-        allowOrigins: config.apiGateway?.corsAllowedOrigins || 
+        allowOrigins: config.apiGateway?.corsAllowedOrigins ||
           (environment === 'prod' ? ['https://your-domain.com'] : apigateway.Cors.ALL_ORIGINS),
         allowMethods: ['PATCH', 'DELETE', 'OPTIONS'],
         allowHeaders: [
@@ -574,10 +575,10 @@ export class MemoryUploadStack extends cdk.Stack {
         ],
       },
     });
-    
+
     const adminPhotoResource = adminPhotosResource.addResource('{photoId}', {
       defaultCorsPreflightOptions: {
-        allowOrigins: config.apiGateway?.corsAllowedOrigins || 
+        allowOrigins: config.apiGateway?.corsAllowedOrigins ||
           (environment === 'prod' ? ['https://your-domain.com'] : apigateway.Cors.ALL_ORIGINS),
         allowMethods: ['PATCH', 'DELETE', 'OPTIONS'],
         allowHeaders: [
@@ -590,12 +591,12 @@ export class MemoryUploadStack extends cdk.Stack {
         ],
       },
     });
-    
+
     // DELETE /api/admin/photos/{photoId} - 画像削除
     adminPhotoResource.addMethod('DELETE', new apigateway.LambdaIntegration(this.adminDeleteFunction, {
       proxy: true,
     }));
-    
+
     // PATCH /api/admin/photos/{photoId} - 画像更新
     adminPhotoResource.addMethod('PATCH', new apigateway.LambdaIntegration(this.adminUpdateFunction, {
       proxy: true,
@@ -612,14 +613,14 @@ export class MemoryUploadStack extends cdk.Stack {
         allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD_OPTIONS,
         cachedMethods: cloudfront.CachedMethods.CACHE_GET_HEAD_OPTIONS,
         compress: true,
-        
+
         // キャッシュポリシー（静的アセット用）
         cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED,
-        
+
         // オリジンリクエストポリシー
         originRequestPolicy: cloudfront.OriginRequestPolicy.CORS_S3_ORIGIN,
       },
-      
+
       // 追加ビヘイビア
       additionalBehaviors: {
         // 画像ファイル用
@@ -629,28 +630,28 @@ export class MemoryUploadStack extends cdk.Stack {
           allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD_OPTIONS,
           cachedMethods: cloudfront.CachedMethods.CACHE_GET_HEAD_OPTIONS,
           compress: true,
-          
+
           // 画像用のキャッシュポリシー（長期キャッシュ）
           cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED,
           originRequestPolicy: cloudfront.OriginRequestPolicy.CORS_S3_ORIGIN,
         },
-        
+
         // API Gateway用
         '/api/*': {
           origin: new origins.RestApiOrigin(this.api),
           viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
           allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
           cachedMethods: cloudfront.CachedMethods.CACHE_GET_HEAD_OPTIONS,
-          
+
           // API用のキャッシュポリシー（キャッシュしない）
           cachePolicy: cloudfront.CachePolicy.CACHING_DISABLED,
           originRequestPolicy: cloudfront.OriginRequestPolicy.ALL_VIEWER,
         },
       },
-      
+
       // デフォルトルートオブジェクト
       defaultRootObject: 'index.html',
-      
+
       // エラーページ設定（SPA用）
       errorResponses: [
         {
@@ -666,18 +667,26 @@ export class MemoryUploadStack extends cdk.Stack {
           ttl: cdk.Duration.minutes(5),
         },
       ],
-      
-      // 価格クラス（地域制限）
-      priceClass: config.cloudfront?.priceClass === 'PriceClass_All' 
-        ? cloudfront.PriceClass.PRICE_CLASS_ALL
-        : cloudfront.PriceClass.PRICE_CLASS_100,
-      
+
+      // 価格クラス（北米、欧州、アジア）
+      priceClass: cloudfront.PriceClass.PRICE_CLASS_200,
+
+      // カスタムドメイン設定
+      ...(config.cloudfront?.customDomain?.enabled && config.cloudfront?.customDomain?.domainName && config.cloudfront?.customDomain?.certificateArn ? {
+        domainNames: [config.cloudfront.customDomain.domainName],
+        certificate: acm.Certificate.fromCertificateArn(
+          this,
+          'CloudFrontCertificate',
+          config.cloudfront.customDomain.certificateArn
+        ),
+      } : {}),
+
       // HTTP/2とHTTP/3サポート
       httpVersion: cloudfront.HttpVersion.HTTP2_AND_3,
-      
+
       // 有効化
       enabled: true,
-      
+
       // コメント
       comment: `CloudFront Distribution for JAWS FESTA Memory Upload (${environment})`,
     });
@@ -685,7 +694,7 @@ export class MemoryUploadStack extends cdk.Stack {
     // ===========================================
     // CloudFormation Outputs
     // ===========================================
-    
+
     // スタック情報
     new cdk.CfnOutput(this, 'StackName', {
       value: this.stackName,
@@ -742,8 +751,10 @@ export class MemoryUploadStack extends cdk.Stack {
     });
 
     new cdk.CfnOutput(this, 'WebsiteUrl', {
-      value: `https://${this.distribution.distributionDomainName}`,
-      description: 'Website URL (CloudFront)',
+      value: config.cloudfront?.customDomain?.enabled && config.cloudfront?.customDomain?.domainName
+        ? `https://${config.cloudfront.customDomain.domainName}`
+        : `https://${this.distribution.distributionDomainName}`,
+      description: 'Website URL (Custom Domain or CloudFront)',
       exportName: `${this.stackName}-WebsiteUrl`,
     });
 
@@ -791,4 +802,6 @@ export class MemoryUploadStack extends cdk.Stack {
       exportName: `${this.stackName}-AdminUpdateFunctionName`,
     });
   }
+
+
 }

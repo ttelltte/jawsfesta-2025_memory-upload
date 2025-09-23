@@ -143,7 +143,7 @@ set AWS_PROFILE=default
   },
   
   "cloudfront": {
-    "priceClass": "PriceClass_100",
+    "priceClass": "PriceClass_200",
     "cachePolicyId": "4135ea2d-6df8-44a3-9df3-4b5a84be39ad"
   },
   
@@ -309,7 +309,7 @@ set AWS_PROFILE=default
 
 | 項目 | 説明 | 例 |
 |------|------|-----|
-| `priceClass` | 価格クラス | `PriceClass_100`, `PriceClass_All` |
+| `priceClass` | 価格クラス | `PriceClass_200`, `PriceClass_All` |
 | `cachePolicyId` | キャッシュポリシーID | `4135ea2d-6df8-44a3-9df3-4b5a84be39ad` |
 
 ### アップロード設定

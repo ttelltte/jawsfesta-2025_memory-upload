@@ -40,22 +40,22 @@ const mergedConfig = {
 };
 
 // AWS プロファイルの設定
-const awsProfile = mergedConfig.profile || 
-                  app.node.tryGetContext('aws-profile') || 
-                  process.env.AWS_PROFILE ||
-                  (environment === 'prod' ? 'prod' : 'default');
+const awsProfile = mergedConfig.profile ||
+  app.node.tryGetContext('aws-profile') ||
+  process.env.AWS_PROFILE ||
+  (environment === 'prod' ? 'prod' : 'default');
 
 // AWS リージョンの設定
-const awsRegion = mergedConfig.region || 
-                  app.node.tryGetContext('aws-region') || 
-                  process.env.AWS_REGION || 
-                  process.env.CDK_DEFAULT_REGION || 
-                  'ap-northeast-1';
+const awsRegion = mergedConfig.region ||
+  app.node.tryGetContext('aws-region') ||
+  process.env.AWS_REGION ||
+  process.env.CDK_DEFAULT_REGION ||
+  'ap-northeast-1';
 
 // AWS アカウントIDの設定
-const awsAccount = mergedConfig.account || 
-                   app.node.tryGetContext('aws-account') || 
-                   process.env.CDK_DEFAULT_ACCOUNT;
+const awsAccount = mergedConfig.account ||
+  app.node.tryGetContext('aws-account') ||
+  process.env.CDK_DEFAULT_ACCOUNT;
 
 console.log(`🔧 AWS Profile: ${awsProfile}`);
 console.log(`🌏 AWS Region: ${awsRegion}`);
@@ -65,8 +65,8 @@ if (awsAccount) {
 
 // スタック名の生成（環境とプロジェクト名を含む）
 const projectName = app.node.tryGetContext('project-name') || 'JawsFestaMemoryUpload';
-const stackName = mergedConfig.stackName || 
-                  `${projectName}${environment.charAt(0).toUpperCase() + environment.slice(1)}Stack`;
+const stackName = mergedConfig.stackName ||
+  `${projectName}${environment.charAt(0).toUpperCase() + environment.slice(1)}Stack`;
 
 console.log(`📦 Stack Name: ${stackName}`);
 
@@ -108,7 +108,7 @@ if (environment === 'prod') {
   // 本番環境の場合の追加設定
   cdk.Tags.of(app).add('CostCenter', mergedConfig.costCenter || 'JAWS-FESTA');
   cdk.Tags.of(app).add('Owner', mergedConfig.owner || 'JAWS-UG');
-  
+
   // 本番環境では削除保護を有効化
   cdk.Tags.of(app).add('DeletionPolicy', 'Retain');
 } else {

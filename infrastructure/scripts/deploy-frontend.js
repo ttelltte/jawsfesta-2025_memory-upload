@@ -26,7 +26,7 @@ console.log('🚀 フロントエンドデプロイスクリプト');
 console.log(`環境: ${environment}`);
 
 // 環境設定ファイルを読み込み
-const configPath = path.join(__dirname, '..', 'config', `${environment}.json`);
+const configPath = path.join(__dirname, '..', '..', 'config', `${environment}.json`);
 let config;
 
 try {
@@ -118,17 +118,11 @@ function getBucketNameFromStack(environment) {
 }
 
 /**
- * S3バケット名を取得（CDK出力ファイル -> AWS CLI の順で試行）
+ * S3バケット名を取得（AWS CLIから直接取得）
  */
 function getBucketName(environment) {
-  try {
-    // まずCDK出力ファイルから取得を試行
-    return getBucketNameFromCdkOutput(environment);
-  } catch (error) {
-    console.log('⚠️  CDK出力ファイルから取得できませんでした。AWS CLIで再試行...');
-    // フォールバックとしてAWS CLIを使用
-    return getBucketNameFromStack(environment);
-  }
+  console.log('🔍 AWS CLIからS3バケット名を取得中...');
+  return getBucketNameFromStack(environment);
 }
 
 /**

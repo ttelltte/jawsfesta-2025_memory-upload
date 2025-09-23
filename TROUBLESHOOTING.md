@@ -361,7 +361,7 @@ aws logs tail /aws/lambda/YOUR_LIST_FUNCTION --follow
 # config/dev.json
 {
   "cloudfront": {
-    "priceClass": "PriceClass_100",  // アジア太平洋のみ
+    "priceClass": "PriceClass_200",  // アジア太平洋のみ
     "cachePolicyId": "4135ea2d-6df8-44a3-9df3-4b5a84be39ad"
   }
 }
