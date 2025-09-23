@@ -565,7 +565,7 @@ export const HomePage: React.FC = () => {
                           <img
                             src={photo.presignedUrl}
                             alt={photo.comment || '投稿画像'}
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-contain"
                             loading="lazy"
                           />
                         ) : (

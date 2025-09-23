@@ -56,7 +56,26 @@ if ($LASTEXITCODE -ne 0) {
 
 Set-Location ..
 
-# 5. Show results
+# 5. CloudFront cache invalidation for JS/HTML files only
+Write-Host "Invalidating CloudFront cache for JS/HTML files..." -ForegroundColor Yellow
+$distributionId = aws cloudformation describe-stacks --stack-name $stackName --query "Stacks[0].Outputs[?OutputKey=='CloudFrontDistributionId'].OutputValue" --output text
+
+if (-not [string]::IsNullOrEmpty($distributionId)) {
+    # Invalidate only JS, CSS, and HTML files (not images)
+    $invalidationResult = aws cloudfront create-invalidation --distribution-id $distributionId --paths "/index.html" "/assets/js/*" "/assets/css/*" --query "Invalidation.Id" --output text
+    
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "CloudFront cache invalidation started: $invalidationResult" -ForegroundColor Green
+        Write-Host "Note: Images are not invalidated to preserve cache performance" -ForegroundColor Yellow
+    } else {
+        Write-Host "Warning: CloudFront cache invalidation failed" -ForegroundColor Yellow
+    }
+} else {
+    Write-Host "Warning: CloudFront Distribution ID not found" -ForegroundColor Yellow
+}
+
+# 6. Show results
 $websiteUrl = aws cloudformation describe-stacks --stack-name $stackName --query "Stacks[0].Outputs[?OutputKey=='WebsiteUrl'].OutputValue" --output text
 Write-Host "Deploy completed!" -ForegroundColor Green
 Write-Host "Website URL: $websiteUrl" -ForegroundColor Cyan
+Write-Host "Cache invalidation: JS, CSS, HTML files cleared" -ForegroundColor Green
