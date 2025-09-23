@@ -1,7 +1,7 @@
 import React from 'react'
 import { Routes, Route } from 'react-router-dom'
 import { Layout } from './components'
-import { UploadPage, GalleryPage } from './pages'
+import { HomePage, UploadPage, GalleryPage } from './pages'
 import { TestPage } from './pages/TestPage'
 
 function App() {
@@ -10,7 +10,9 @@ function App() {
       {/* @ts-ignore */}
       <Routes>
         {/* @ts-ignore */}
-        <Route path="/" element={<UploadPage />} />
+        <Route path="/" element={<HomePage />} />
+        {/* @ts-ignore */}
+        <Route path="/upload" element={<UploadPage />} />
         {/* @ts-ignore */}
         <Route path="/gallery" element={<GalleryPage />} />
         {/* @ts-ignore */}

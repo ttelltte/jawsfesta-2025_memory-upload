@@ -5,7 +5,8 @@ const Navigation: React.FC = () => {
   const location = useLocation()
 
   const navItems = [
-    { path: '/', label: 'アップロード', icon: '📤' },
+    { path: '/', label: 'ホーム', icon: '🏠' },
+    { path: '/upload', label: 'アップロード', icon: '📤' },
     { path: '/gallery', label: 'ギャラリー', icon: '🖼️' },
     ...(import.meta.env.DEV ? [{ path: '/test', label: 'テスト', icon: '🧪' }] : [])
   ]
@@ -33,9 +34,10 @@ const Navigation: React.FC = () => {
                   : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                   }`}
                 data-testid={
-                  item.path === '/' ? 'nav-upload' :
-                    item.path === '/gallery' ? 'nav-gallery' :
-                      'nav-test'
+                  item.path === '/' ? 'nav-home' :
+                    item.path === '/upload' ? 'nav-upload' :
+                      item.path === '/gallery' ? 'nav-gallery' :
+                        'nav-test'
                 }
               >
                 <span className="mr-2">{item.icon}</span>
