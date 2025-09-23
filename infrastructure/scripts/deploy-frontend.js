@@ -4,10 +4,10 @@
  * フロントエンドをビルドしてS3にデプロイするスクリプト
  * 
  * 使用方法:
- * node deploy-frontend.js [環境名]
+ * node deploy-frontend.js [環境名] [--build]
  * 
  * 例:
- * node deploy-frontend.js dev
+ * node deploy-frontend.js dev --build
  * node deploy-frontend.js prod
  */
 
@@ -20,9 +20,13 @@ const mime = require('mime-types');
 
 // 引数の解析
 const environment = process.argv[2] || 'dev';
+const shouldBuild = process.argv.includes('--build');
+
+console.log('🚀 フロントエンドデプロイスクリプト');
+console.log(`環境: ${environment}`);
 
 // 環境設定ファイルを読み込み
-const configPath = path.join(__dirname, '..', '..', 'config', `${environment}.json`);
+const configPath = path.join(__dirname, '..', 'config', `${environment}.json`);
 let config;
 
 try {
@@ -42,12 +46,90 @@ const cloudFrontClient = new CloudFrontClient({
   region: config.region || 'ap-northeast-1'
 });
 
-// 設定
-const BUCKET_NAME = environment === 'dev' 
-  ? 'jawsfestamemoryuploaddev-photosbucket2ac9d1f0-dsxgalzcz168'
-  : `jawsfestamemoryuploadprod-photosbucket-${environment}`;
+// パス設定
 const FRONTEND_DIR = path.join(__dirname, '..', '..', 'frontend');
 const DIST_DIR = path.join(FRONTEND_DIR, 'dist');
+
+/**
+ * CDK出力ファイルからS3バケット名を取得
+ */
+function getBucketNameFromCdkOutput(environment) {
+  const outputFile = path.join(__dirname, '..', `cdk-outputs-${environment}.json`);
+  
+  if (!fs.existsSync(outputFile)) {
+    console.error(`❌ CDK出力ファイルが見つかりません: ${outputFile}`);
+    console.error('まずCDKデプロイを実行してください:');
+    console.error(`  npm run deploy:${environment}`);
+    process.exit(1);
+  }
+  
+  try {
+    const outputs = JSON.parse(fs.readFileSync(outputFile, 'utf8'));
+    const stackName = Object.keys(outputs)[0]; // 最初のスタック名を取得
+    const bucketName = outputs[stackName]?.PhotosBucketName;
+    
+    if (!bucketName) {
+      console.error('❌ S3バケット名がCDK出力に見つかりません。');
+      console.error('CDKデプロイが正常に完了していることを確認してください。');
+      process.exit(1);
+    }
+    
+    console.log(`✅ S3バケット名を取得: ${bucketName}`);
+    return bucketName;
+    
+  } catch (error) {
+    console.error('❌ CDK出力ファイルの解析に失敗しました:');
+    console.error(error.message);
+    process.exit(1);
+  }
+}
+
+/**
+ * AWS CLIでスタック出力からS3バケット名を取得（フォールバック）
+ */
+function getBucketNameFromStack(environment) {
+  // スタック名を構築（CDKのネーミング規則に合わせる）
+  const stackName = config.stackName || `JawsFestaMemoryUpload${environment.charAt(0).toUpperCase() + environment.slice(1)}`;
+  
+  try {
+    console.log(`🔍 スタック出力からバケット名を取得中: ${stackName}`);
+    
+    const result = execSync(
+      `aws cloudformation describe-stacks --stack-name ${stackName} --query "Stacks[0].Outputs[?OutputKey=='PhotosBucketName'].OutputValue" --output text`,
+      { encoding: 'utf8' }
+    ).trim();
+    
+    if (!result || result === 'None') {
+      throw new Error(`S3バケット名がスタック出力に見つかりません`);
+    }
+    
+    console.log(`✅ S3バケット名を取得: ${result}`);
+    return result;
+    
+  } catch (error) {
+    console.error('❌ スタック出力の取得に失敗しました:');
+    console.error(error.message);
+    console.error('\n以下を確認してください:');
+    console.error('1. CDKデプロイが正常に完了している');
+    console.error('2. AWS認証情報が正しく設定されている');
+    console.error('3. スタック名が正しい');
+    process.exit(1);
+  }
+}
+
+/**
+ * S3バケット名を取得（CDK出力ファイル -> AWS CLI の順で試行）
+ */
+function getBucketName(environment) {
+  try {
+    // まずCDK出力ファイルから取得を試行
+    return getBucketNameFromCdkOutput(environment);
+  } catch (error) {
+    console.log('⚠️  CDK出力ファイルから取得できませんでした。AWS CLIで再試行...');
+    // フォールバックとしてAWS CLIを使用
+    return getBucketNameFromStack(environment);
+  }
+}
 
 /**
  * フロントエンドをビルド
@@ -63,7 +145,7 @@ async function buildFrontend() {
       VITE_ENVIRONMENT: environment,
     };
     
-    // CDK出力から実際のURLを取得する場合の処理（将来の拡張用）
+    // CDK出力から実際のURLを取得する場合の処理
     if (config.apiGatewayUrl) {
       env.VITE_API_URL = config.apiGatewayUrl;
     }
@@ -124,13 +206,13 @@ function getFilesRecursively(dir, baseDir = dir) {
 /**
  * S3バケットの既存ファイルをクリア（images/フォルダは除外）
  */
-async function clearS3Bucket() {
+async function clearS3Bucket(bucketName) {
   console.log('🗑️  S3バケットの既存ファイルをクリア中...');
   
   try {
     // 既存オブジェクトの一覧を取得
     const listCommand = new ListObjectsV2Command({
-      Bucket: BUCKET_NAME,
+      Bucket: bucketName,
       Prefix: '', // 全てのオブジェクト
     });
     
@@ -157,7 +239,7 @@ async function clearS3Bucket() {
     for (const object of objectsToDelete) {
       if (object.Key) {
         const deleteCommand = new DeleteObjectCommand({
-          Bucket: BUCKET_NAME,
+          Bucket: bucketName,
           Key: object.Key,
         });
         
@@ -178,8 +260,13 @@ async function clearS3Bucket() {
     console.error('❌ S3バケットのクリアに失敗しました:');
     
     if (error.name === 'NoSuchBucket') {
-      console.error(`バケット '${BUCKET_NAME}' が見つかりません。`);
+      console.error(`バケット '${bucketName}' が見つかりません。`);
       console.error('CDK デプロイが完了していることを確認してください。');
+    } else if (error.name === 'AccessDenied') {
+      console.error('アクセスが拒否されました。以下を確認してください:');
+      console.error('1. AWS認証情報が正しく設定されている');
+      console.error('2. S3バケットへの削除権限がある');
+      console.error('3. バケット名が正しい');
     } else {
       console.error(error.message);
     }
@@ -191,7 +278,7 @@ async function clearS3Bucket() {
 /**
  * ファイルをS3にアップロード
  */
-async function uploadToS3() {
+async function uploadToS3(bucketName) {
   console.log('☁️  S3にファイルをアップロード中...');
   
   try {
@@ -200,7 +287,7 @@ async function uploadToS3() {
     
     if (files.length === 0) {
       console.error('❌ ビルドされたファイルが見つかりません。');
-      console.error('先にフロントエンドをビルドしてください。');
+      console.error('先にフロントエンドをビルドしてください: --build オプションを使用');
       process.exit(1);
     }
     
@@ -226,7 +313,7 @@ async function uploadToS3() {
       }
       
       const putCommand = new PutObjectCommand({
-        Bucket: BUCKET_NAME,
+        Bucket: bucketName,
         Key: file.s3Key,
         Body: fileContent,
         ContentType: contentType,
@@ -262,8 +349,7 @@ async function invalidateCloudFront() {
   console.log('🔄 CloudFrontキャッシュを無効化中...');
   
   try {
-    // CDK出力からDistribution IDを取得する必要があるが、
-    // 簡単のため設定ファイルから取得
+    // CDK出力からDistribution IDを取得
     const distributionId = config.cloudFrontDistributionId;
     
     if (!distributionId) {
@@ -299,13 +385,13 @@ async function invalidateCloudFront() {
 /**
  * デプロイ情報を表示
  */
-function showDeploymentInfo() {
+function showDeploymentInfo(bucketName) {
   console.log('');
   console.log('🎉 フロントエンドのデプロイが完了しました！');
   console.log('');
   console.log('📋 デプロイ情報:');
   console.log(`   環境: ${environment}`);
-  console.log(`   S3バケット: ${BUCKET_NAME}`);
+  console.log(`   S3バケット: ${bucketName}`);
   
   if (config.cloudFrontUrl) {
     console.log(`   CloudFront URL: ${config.cloudFrontUrl}`);
@@ -317,68 +403,48 @@ function showDeploymentInfo() {
   console.log('');
   console.log('💡 次のステップ:');
   console.log('   1. ウェブサイトにアクセスして動作確認');
-  console.log('   2. 必要に応じて初期データを投入');
-  console.log(`      npm run setup-data:${environment}`);
+  console.log('   2. 必要に応じてCloudFrontキャッシュの無効化完了を待つ');
+  console.log('   3. 画像アップロード機能のテスト');
+  console.log('');
 }
 
 /**
  * メイン処理
  */
 async function main() {
-  const startTime = Date.now();
-  
-  console.log('🚀 フロントエンドデプロイスクリプト');
-  console.log(`環境: ${environment}`);
-  console.log('');
-  
   try {
-    // ビルドディレクトリの存在確認
-    if (!fs.existsSync(FRONTEND_DIR)) {
-      console.error(`❌ フロントエンドディレクトリが見つかりません: ${FRONTEND_DIR}`);
-      process.exit(1);
-    }
+    // S3バケット名を取得
+    const bucketName = getBucketName(environment);
     
-    // 強制再ビルドオプション
-    if (process.argv.includes('--build') || !fs.existsSync(DIST_DIR)) {
+    // ビルドが必要な場合
+    if (shouldBuild) {
       await buildFrontend();
     } else {
       console.log('📁 既存のビルドファイルを使用します。');
       console.log('   再ビルドする場合は --build オプションを使用してください。');
+      
+      // distディレクトリの存在確認
+      if (!fs.existsSync(DIST_DIR)) {
+        console.error('❌ ビルドファイルが見つかりません。');
+        console.error('--build オプションを使用してビルドしてください。');
+        process.exit(1);
+      }
     }
     
-    // S3バケットをクリア（--no-clear オプションがない場合）
-    if (!process.argv.includes('--no-clear')) {
-      await clearS3Bucket();
-    }
+    // デプロイ処理
+    await clearS3Bucket(bucketName);
+    await uploadToS3(bucketName);
+    await invalidateCloudFront();
     
-    // S3にアップロード
-    await uploadToS3();
-    
-    // CloudFrontキャッシュを無効化（--no-invalidate オプションがない場合）
-    if (!process.argv.includes('--no-invalidate')) {
-      await invalidateCloudFront();
-    }
-    
-    // デプロイ情報を表示
-    showDeploymentInfo();
-    
-    const duration = ((Date.now() - startTime) / 1000).toFixed(1);
-    console.log(`⏱️  実行時間: ${duration}秒`);
+    // デプロイ情報表示
+    showDeploymentInfo(bucketName);
     
   } catch (error) {
-    console.error('❌ デプロイに失敗しました:');
+    console.error('❌ デプロイ処理でエラーが発生しました:');
     console.error(error.message);
     process.exit(1);
   }
 }
 
 // スクリプト実行
-if (require.main === module) {
-  main().catch(console.error);
-}
-
-module.exports = {
-  buildFrontend,
-  uploadToS3,
-  invalidateCloudFront,
-};
+main();

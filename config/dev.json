@@ -2,13 +2,15 @@
   "stackName": "JawsFestaMemoryUploadDev",
   "environment": "dev",
   "region": "ap-northeast-1",
-  "account": "950452130698",
+  "account": "375057248858",
   "profile": "default",
   "domainName": "",
   "certificateArn": "",
   "s3": {
     "bucketName": "",
     "corsAllowedOrigins": [
+      "http://festa2025.jaws-private-dev.link",
+      "https://festa2025.jaws-private-dev.link",
       "http://localhost:3000",
       "http://localhost:5173",
       "https://d13e8l3unbz1vd.cloudfront.net"
@@ -27,6 +29,8 @@
   },
   "apiGateway": {
     "corsAllowedOrigins": [
+      "http://festa2025.jaws-private-dev.link",
+      "https://festa2025.jaws-private-dev.link",
       "http://localhost:3000",
       "http://localhost:5173",
       "https://d13e8l3unbz1vd.cloudfront.net"
@@ -46,14 +50,14 @@
     ]
   },
   "cloudfront": {
-    "priceClass": "PriceClass_100",
+    "priceClass": "PriceClass_200",
     "cachePolicyId": "4135ea2d-6df8-44a3-9df3-4b5a84be39ad"
   },
   "cloudFrontDistributionId": "E2B3V7FM1IT2W2",
   "upload": {
     "maxFileSize": "10485760",
     "allowedFileTypes": "image/*",
-    "ttlDays": "30"
+    "ttlDays": "60"
   },
   "pagination": {
     "maxItemsPerPage": "50"

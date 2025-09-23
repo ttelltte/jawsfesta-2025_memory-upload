@@ -78,7 +78,7 @@ $env:AWS_DEFAULT_REGION="ap-northeast-1"
 
 ```bash
 # 開発環境用プロファイル
-aws configure --profile default
+aws configure
 # 本番環境用プロファイル（別アカウントの場合）
 aws configure --profile prod
 ```
