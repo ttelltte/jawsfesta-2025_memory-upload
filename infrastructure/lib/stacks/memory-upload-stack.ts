@@ -67,19 +67,24 @@ export class MemoryUploadStack extends cdk.Stack {
         },
       ],
       
-      // ライフサイクル設定（将来の拡張用）
+      // ライフサイクル設定
       lifecycleRules: [
         {
           id: 'DeleteIncompleteMultipartUploads',
           abortIncompleteMultipartUploadAfter: cdk.Duration.days(1),
         },
+        // 開発環境では30日後にオブジェクトを自動削除
+        ...(environment !== 'prod' ? [{
+          id: 'DeleteObjectsAfter30Days',
+          expiration: cdk.Duration.days(30),
+          prefix: 'images/', // 画像フォルダのみ対象
+        }] : []),
       ],
       
       // 削除保護（本番環境では重要）
       removalPolicy: environment === 'prod' 
         ? cdk.RemovalPolicy.RETAIN 
         : cdk.RemovalPolicy.DESTROY,
-      autoDeleteObjects: environment !== 'prod',
       
       // バージョニング（本番環境では有効化）
       versioned: environment === 'prod',

@@ -196,7 +196,7 @@ export const GalleryPage = () => {
         {/* メタデータ表示 */}
         <div className="p-3" data-testid="photo-metadata">
           <div className="text-sm font-medium text-gray-800 mb-1" data-testid="uploader-name">
-            {photo.uploaderName || '匿名'}
+            {photo.uploaderName && photo.uploaderName !== 'Anonymous' ? photo.uploaderName : '匿名'}
           </div>
           
           {photo.comment && (
@@ -211,7 +211,8 @@ export const GalleryPage = () => {
               month: 'short',
               day: 'numeric',
               hour: '2-digit',
-              minute: '2-digit'
+              minute: '2-digit',
+              timeZone: 'Asia/Tokyo'
             })}
           </div>
         </div>
@@ -316,7 +317,7 @@ export const GalleryPage = () => {
                   {/* 投稿者 */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">投稿者</label>
-                    <div className="text-lg text-gray-900">{selectedPhoto.uploaderName || '匿名'}</div>
+                    <div className="text-lg text-gray-900">{selectedPhoto.uploaderName && selectedPhoto.uploaderName !== 'Anonymous' ? selectedPhoto.uploaderName : '匿名'}</div>
                   </div>
                   
                   {/* コメント */}
@@ -339,7 +340,8 @@ export const GalleryPage = () => {
                         day: 'numeric',
                         hour: '2-digit',
                         minute: '2-digit',
-                        second: '2-digit'
+                        second: '2-digit',
+                        timeZone: 'Asia/Tokyo'
                       })}
                     </div>
                   </div>
