@@ -84,12 +84,13 @@ dist
 .cache/
 public
 
-# Vite build output
-dist/
-dist-ssr/
+# Vite build output (frontend specific)
+frontend/dist/
+frontend/dist-ssr/
 
 # Rollup build output
-build/
+frontend/build/
+backend/build/
 
 # Storybook build outputs
 .out
@@ -112,9 +113,22 @@ logs
 
 # AWS CDK
 cdk.out/
-*.d.ts
-*.js
-*.js.map
+infrastructure/lib/**/*.d.ts
+infrastructure/lib/**/*.js
+infrastructure/lib/**/*.js.map
+infrastructure/test/**/*.d.ts
+infrastructure/test/**/*.js
+infrastructure/test/**/*.js.map
+infrastructure/bin/**/*.d.ts
+infrastructure/bin/**/*.js
+infrastructure/bin/**/*.js.map
+
+# Keep Lambda function source files
+!infrastructure/lambda/**/*.js
+
+# Frontend build output
+frontend/dist/
+frontend/build/
 
 # AWS credentials (never commit these!)
 .aws/
@@ -144,4 +158,51 @@ config/.env*
 
 # Local uploads directory (keep .gitkeep for directory structure)
 backend/uploads/*
-!backend/uploads/.gitkeep
+!backend/uploads/.gitkeep# P
+roject specific
+# CDK context and cache
+infrastructure/cdk.context.json
+
+# Lambda layer dependencies
+infrastructure/lambda/*/node_modules/
+infrastructure/lambda/*/package-lock.json
+
+# Test files and temporary data
+*.test.js
+*.test.ts
+test-*.json
+response.json
+test-payload.json
+
+# Local development files
+.env.local
+.env.development
+.env.test
+.env.production
+
+# Backup files
+*.bak
+*.backup
+*.orig
+
+# Editor temporary files
+.#*
+\#*#
+*~
+.*.swp
+.*.swo
+
+# MacOS specific
+.AppleDouble
+.LSOverride
+Icon?
+
+# Windows specific
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux specific
+*~
+.fuse_hidden*
+.directory
+.Trash-*

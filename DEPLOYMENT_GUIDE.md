@@ -254,13 +254,13 @@ npm run deploy-frontend:dev
 
 ### 作成されるAWSリソース
 
-| リソース | 用途 | 例 |
-|---------|------|-----|
-| S3 Bucket | 画像保存・静的サイトホスティング | jawsfestamemoryuploaddev-photosbucket2ac9d1f0-dsxgalzcz168 |
-| DynamoDB Tables | データ保存 | Photos, Config |
-| Lambda Functions | API処理 | Upload, List, Config |
-| API Gateway | REST API | https://xxx.execute-api.ap-northeast-1.amazonaws.com/dev/ |
-| CloudFront | CDN | https://xxx.cloudfront.net |
+| リソース         | 用途                             | 例                                                         |
+| ---------------- | -------------------------------- | ---------------------------------------------------------- |
+| S3 Bucket        | 画像保存・静的サイトホスティング | jawsfestamemoryuploaddev-photosbucket2ac9d1f0-dsxgalzcz168 |
+| DynamoDB Tables  | データ保存                       | Photos, Config                                             |
+| Lambda Functions | API処理                          | Upload, List, Config                                       |
+| API Gateway      | REST API                         | https://xxx.execute-api.ap-northeast-1.amazonaws.com/dev/  |
+| CloudFront       | CDN                              | https://xxx.cloudfront.net                                 |
 
 ### アクセスURL
 

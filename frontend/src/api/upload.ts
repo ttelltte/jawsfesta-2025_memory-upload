@@ -30,6 +30,24 @@ export interface UploadProgress {
 }
 
 /**
+ * ファイルをBase64に変換する
+ */
+const fileToBase64 = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        resolve(reader.result)
+      } else {
+        reject(new Error('Failed to convert file to base64'))
+      }
+    }
+    reader.onerror = () => reject(new Error('Failed to read file'))
+    reader.readAsDataURL(file)
+  })
+}
+
+/**
  * 画像をアップロードする
  */
 export const uploadImage = async (
@@ -37,12 +55,19 @@ export const uploadImage = async (
   onProgress?: (progress: UploadProgress) => void
 ): Promise<UploadResponse> => {
   try {
-    // FormDataを作成
-    const formData = new FormData()
-    formData.append('image', request.file)
-    formData.append('name', request.uploaderName || '')
-    formData.append('comment', request.comment || '')
-    formData.append('checkedItems', JSON.stringify(request.checkedItems))
+    // ファイルをBase64に変換
+    const imageData = await fileToBase64(request.file)
+    
+    // checkedItemsを配列形式に変換
+    const checkedItemsArray = Object.keys(request.checkedItems).filter(key => request.checkedItems[key] === true)
+    
+    // JSONペイロードを作成
+    const payload = {
+      imageData: imageData,
+      uploaderName: request.uploaderName || '',
+      comment: request.comment || '',
+      checkedItems: checkedItemsArray
+    }
 
     // API URLを取得
     const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001'
@@ -137,9 +162,10 @@ export const uploadImage = async (
       // リクエスト設定
       xhr.timeout = 120000 // 120秒でタイムアウト（大きなファイル対応）
       xhr.open('POST', `${apiUrl}/api/upload`)
+      xhr.setRequestHeader('Content-Type', 'application/json')
       
       // リクエスト送信
-      xhr.send(formData)
+      xhr.send(JSON.stringify(payload))
     })
     
   } catch (error) {
