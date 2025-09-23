@@ -681,6 +681,13 @@ export class MemoryUploadStack extends cdk.Stack {
         ),
       } : {}),
 
+      // 地理的制限設定（日本のみアクセス許可）
+      ...(config.cloudfront?.geoRestriction?.enabled ? {
+        geoRestriction: config.cloudfront.geoRestriction.restrictionType === 'whitelist'
+          ? cloudfront.GeoRestriction.allowlist(...(config.cloudfront.geoRestriction.locations || ['JP']))
+          : cloudfront.GeoRestriction.denylist(...(config.cloudfront.geoRestriction.locations || [])),
+      } : {}),
+
       // HTTP/2とHTTP/3サポート
       httpVersion: cloudfront.HttpVersion.HTTP2_AND_3,
 

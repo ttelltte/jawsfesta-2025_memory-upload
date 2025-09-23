@@ -120,7 +120,7 @@ export const MetadataForm: React.FC<MetadataFormProps> = ({
           id="comment"
           value={formData.comment}
           onChange={(e) => handleInputChange('comment', e.target.value)}
-          placeholder="例: 楽しかった！最高のイベントでした。"
+          placeholder="例: お祭り最高！！"
           rows={3}
           className={`
             w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-vertical
@@ -137,7 +137,7 @@ export const MetadataForm: React.FC<MetadataFormProps> = ({
           <p className="mt-1 text-sm text-red-600">{validationErrors.comment}</p>
         )}
         <div className="mt-1 flex justify-between text-xs text-gray-500">
-          <span>思い出や感想を簡潔にお書きください</span>
+          <span>思い出や感想などを自由にお書きください</span>
           <span>{formData.comment.length}/100</span>
         </div>
       </div>

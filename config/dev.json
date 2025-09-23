@@ -52,6 +52,13 @@
       "enabled": true,
       "domainName": "festa2025.jaws-private-dev.link",
       "certificateArn": "arn:aws:acm:us-east-1:375057248858:certificate/912de551-68cc-4afa-b5e4-d9f060840b9f"
+    },
+    "geoRestriction": {
+      "enabled": true,
+      "restrictionType": "whitelist",
+      "locations": [
+        "JP"
+      ]
     }
   },
   "cloudFrontDistributionId": "E3C5VWU6YZ9PPK",
