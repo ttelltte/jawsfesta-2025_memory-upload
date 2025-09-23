@@ -270,32 +270,16 @@ export const HomePage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      <div className="max-w-6xl mx-auto px-3 sm:px-4 py-4 sm:py-6 md:py-8">
-        {/* ヘッダー - 改善されたタイトル配置 */}
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6 md:py-8">
+        {/* ヘッダー */}
         <div className="text-center mb-6 sm:mb-8">
-          <div className="flex items-center justify-center gap-3 mb-2">
-            <i className="fas fa-camera text-2xl sm:text-3xl md:text-4xl text-blue-600"></i>
-            <div>
-              <h1 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-gray-800 leading-tight">
-                JAWS FESTA 2025
-              </h1>
-              <p className="text-sm sm:text-base md:text-lg text-blue-600 font-medium">
-                思い出アップロード
-              </p>
-            </div>
-          </div>
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 mb-2">
+            JAWS FESTA 2025 思い出アップロード
+          </h1>
         </div>
 
-        {/* アップロードセクション - スマホ優先 */}
+        {/* アップロードセクション */}
         <div className="bg-white rounded-xl sm:rounded-2xl shadow-xl p-4 sm:p-6 md:p-8 mb-8 sm:mb-12">
-          <div className="text-center mb-6 sm:mb-8">
-            <div className="flex items-center justify-center gap-2 mb-2">
-              <i className="fas fa-cloud-upload-alt text-xl sm:text-2xl text-blue-600"></i>
-              <h2 className="text-xl sm:text-2xl font-bold text-gray-800">
-                思い出をアップロード
-              </h2>
-            </div>
-          </div>
           
           {/* 成功メッセージ */}
           {successMessage && (
@@ -372,50 +356,41 @@ export const HomePage: React.FC = () => {
           )}
         </div>
 
-        {/* ギャラリーセクション - スマホ優先 */}
-        <div id="gallery-section" className="bg-white rounded-xl sm:rounded-2xl shadow-xl p-4 sm:p-6 md:p-8">
-          <div className="flex flex-col gap-4 mb-6 sm:mb-8">
-            <div className="flex items-center justify-center sm:justify-start gap-2">
-              <i className="fas fa-images text-xl sm:text-2xl text-blue-600"></i>
-              <h2 className="text-xl sm:text-2xl font-bold text-gray-800">
-                思い出ギャラリー
-              </h2>
-            </div>
-            
-            {!galleryLoading && !galleryError && photos.length > 0 && (
-              <div className="flex flex-col sm:flex-row justify-between items-center gap-3 sm:gap-4">
-                <div className="text-gray-600 text-sm sm:text-base">
-                  {photos.length}枚の思い出
-                </div>
-                
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-600 hidden sm:inline">表示:</span>
-                  <button
-                    onClick={() => setLayout('masonry')}
-                    className={`px-2 sm:px-3 py-1 rounded-md text-xs sm:text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-1 ${
-                      layout === 'masonry'
-                        ? 'bg-blue-500 text-white'
-                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                    }`}
-                  >
-                    <i className="fas fa-grip"></i>
-                    <span className="hidden sm:inline">マソンリー</span>
-                  </button>
-                  <button
-                    onClick={() => setLayout('grid')}
-                    className={`px-2 sm:px-3 py-1 rounded-md text-xs sm:text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-1 ${
-                      layout === 'grid'
-                        ? 'bg-blue-500 text-white'
-                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                    }`}
-                  >
-                    <i className="fas fa-square"></i>
-                    <span className="hidden sm:inline">グリッド</span>
-                  </button>
-                </div>
+        {/* ギャラリーセクション */}
+        <div id="gallery-section">
+          {!galleryLoading && !galleryError && photos.length > 0 && (
+            <div className="flex justify-between items-center mb-4">
+              <div className="text-gray-600 text-sm sm:text-base">
+                {photos.length}枚の思い出
               </div>
-            )}
-          </div>
+              
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600 hidden sm:inline">表示:</span>
+                <button
+                  onClick={() => setLayout('masonry')}
+                  className={`px-2 sm:px-3 py-1 rounded-md text-xs sm:text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-1 ${
+                    layout === 'masonry'
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                >
+                  <i className="fas fa-grip"></i>
+                  <span className="hidden sm:inline">マソンリー</span>
+                </button>
+                <button
+                  onClick={() => setLayout('grid')}
+                  className={`px-2 sm:px-3 py-1 rounded-md text-xs sm:text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-1 ${
+                    layout === 'grid'
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                >
+                  <i className="fas fa-square"></i>
+                  <span className="hidden sm:inline">グリッド</span>
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* ギャラリーコンテンツ */}
           {galleryLoading ? (
