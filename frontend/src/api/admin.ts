@@ -4,7 +4,6 @@ const getApiUrl = () => import.meta.env.VITE_API_URL || 'http://localhost:3001'
 export interface UpdatePhotoRequest {
   uploaderName?: string
   comment?: string
-  rotation?: number
 }
 
 export interface AdminApiResponse<T = any> {
@@ -19,7 +18,10 @@ export interface AdminApiResponse<T = any> {
 // 画像削除
 export const deletePhoto = async (photoId: string): Promise<AdminApiResponse> => {
   try {
-    const response = await fetch(`${getApiUrl()}/api/admin/photos/${photoId}`, {
+    const url = `${getApiUrl()}/api/admin/photos/${photoId}?admin=19931124`
+    console.log('管理者API削除リクエスト URL:', url)
+    
+    const response = await fetch(url, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
@@ -47,7 +49,11 @@ export const deletePhoto = async (photoId: string): Promise<AdminApiResponse> =>
 // 画像情報更新
 export const updatePhoto = async (photoId: string, updates: UpdatePhotoRequest): Promise<AdminApiResponse> => {
   try {
-    const response = await fetch(`${getApiUrl()}/api/admin/photos/${photoId}`, {
+    const url = `${getApiUrl()}/api/admin/photos/${photoId}?admin=19931124`
+    console.log('管理者API更新リクエスト URL:', url)
+    console.log('管理者API更新リクエスト データ:', updates)
+    
+    const response = await fetch(url, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',

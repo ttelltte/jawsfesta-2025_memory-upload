@@ -18,14 +18,13 @@ export const AdminEditDialog: React.FC<AdminEditDialogProps> = ({
 }) => {
   const [uploaderName, setUploaderName] = useState('')
   const [comment, setComment] = useState('')
-  const [rotation, setRotation] = useState(0)
+
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   useEffect(() => {
     if (photo && isOpen) {
       setUploaderName(photo.uploaderName || '')
       setComment(photo.comment || '')
-      setRotation(0)
       setShowDeleteConfirm(false)
     }
   }, [photo, isOpen])
@@ -41,9 +40,6 @@ export const AdminEditDialog: React.FC<AdminEditDialogProps> = ({
     if (comment !== photo.comment) {
       updates.comment = comment
     }
-    if (rotation !== 0) {
-      updates.rotation = rotation
-    }
 
     onSave(updates)
   }
@@ -57,8 +53,7 @@ export const AdminEditDialog: React.FC<AdminEditDialogProps> = ({
   }
 
   const hasChanges = uploaderName !== photo.uploaderName || 
-                    comment !== photo.comment || 
-                    rotation !== 0
+                    comment !== photo.comment
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -85,10 +80,6 @@ export const AdminEditDialog: React.FC<AdminEditDialogProps> = ({
                   src={photo.presignedUrl}
                   alt="プレビュー"
                   className="max-w-full max-h-full object-contain"
-                  style={{
-                    transform: `rotate(${rotation}deg)`,
-                    transition: 'transform 0.3s ease'
-                  }}
                 />
               </div>
             </div>
@@ -123,33 +114,7 @@ export const AdminEditDialog: React.FC<AdminEditDialogProps> = ({
               />
             </div>
 
-            {/* 回転操作 */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                画像回転
-              </label>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setRotation(prev => (prev + 90) % 360)}
-                  className="px-3 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors flex items-center gap-2"
-                >
-                  <i className="fas fa-redo"></i>
-                  90度回転
-                </button>
-                {rotation !== 0 && (
-                  <button
-                    onClick={() => setRotation(0)}
-                    className="px-3 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors flex items-center gap-2"
-                  >
-                    <i className="fas fa-undo"></i>
-                    リセット
-                  </button>
-                )}
-                <span className="text-sm text-gray-600">
-                  {rotation}度
-                </span>
-              </div>
-            </div>
+
           </div>
 
           {/* ボタン */}

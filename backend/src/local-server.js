@@ -167,6 +167,113 @@ app.get('/api/config', (req, res) => {
   res.json(response);
 });
 
+// 管理者認証チェック
+const validateAdmin = (req, res, next) => {
+  const adminParam = req.query.admin;
+  if (adminParam !== '19931124') {
+    return res.status(401).json({
+      success: false,
+      error: {
+        code: 'UNAUTHORIZED',
+        message: 'Unauthorized access'
+      }
+    });
+  }
+  next();
+};
+
+// 管理者用 - 画像削除
+app.delete('/api/admin/photos/:photoId', validateAdmin, (req, res) => {
+  const photoId = req.params.photoId;
+  console.log('管理者画像削除リクエスト受信:', photoId);
+  
+  const photoIndex = photos.findIndex(p => p.id === photoId);
+  
+  if (photoIndex === -1) {
+    return res.status(404).json({
+      success: false,
+      error: {
+        code: 'NOT_FOUND',
+        message: '画像が見つかりません'
+      }
+    });
+  }
+  
+  const photo = photos[photoIndex];
+  
+  // ローカルファイルを削除
+  const filePath = path.join(uploadDir, photo.filename);
+  if (fs.existsSync(filePath)) {
+    try {
+      fs.unlinkSync(filePath);
+      console.log('ローカルファイル削除成功:', filePath);
+    } catch (error) {
+      console.error('ローカルファイル削除エラー:', error);
+    }
+  }
+  
+  // メモリから削除
+  photos.splice(photoIndex, 1);
+  
+  console.log('画像削除成功:', photoId);
+  
+  res.json({
+    success: true,
+    message: '画像が削除されました'
+  });
+});
+
+// 管理者用 - 画像情報更新
+app.patch('/api/admin/photos/:photoId', validateAdmin, (req, res) => {
+  const photoId = req.params.photoId;
+  const updates = req.body;
+  console.log('管理者画像更新リクエスト受信:', photoId, updates);
+  
+  const photo = photos.find(p => p.id === photoId);
+  
+  if (!photo) {
+    return res.status(404).json({
+      success: false,
+      error: {
+        code: 'NOT_FOUND',
+        message: '画像が見つかりません'
+      }
+    });
+  }
+  
+  // メタデータ更新
+  if (updates.uploaderName !== undefined) {
+    photo.name = updates.uploaderName;
+  }
+  
+  if (updates.comment !== undefined) {
+    photo.comment = updates.comment;
+  }
+  
+  // 画像回転処理（ローカル環境では実際の処理はスキップ）
+  if (updates.rotation && updates.rotation !== 0) {
+    console.log(`画像回転処理（モック）: ${updates.rotation}度`);
+  }
+  
+  // レスポンス用データ作成
+  const uploadTime = new Date(photo.uploadedAt);
+  const responseData = {
+    id: photo.id,
+    uploaderName: photo.name || 'Anonymous',
+    comment: photo.comment || '',
+    uploadTime: photo.uploadedAt,
+    uploadTimeUnix: uploadTime.getTime(),
+    presignedUrl: photo.url
+  };
+  
+  console.log('画像更新成功:', responseData);
+  
+  res.json({
+    success: true,
+    data: responseData
+  });
+});
+
 // 静的ファイル配信（アップロードされた画像）
 app.use('/uploads', express.static(uploadDir));
 
@@ -179,8 +286,10 @@ app.listen(port, () => {
   console.log(`🚀 ローカルAPIサーバーが起動しました: http://localhost:${port}`);
   console.log(`📁 アップロードディレクトリ: ${uploadDir}`);
   console.log(`🔗 API エンドポイント:`);
-  console.log(`   POST /api/upload - 画像アップロード`);
-  console.log(`   GET  /api/photos - 画像一覧取得`);
-  console.log(`   GET  /api/config - 設定取得`);
-  console.log(`   GET  /health - ヘルスチェック`);
+  console.log(`   POST   /api/upload - 画像アップロード`);
+  console.log(`   GET    /api/photos - 画像一覧取得`);
+  console.log(`   GET    /api/config - 設定取得`);
+  console.log(`   DELETE /api/admin/photos/:id?admin=19931124 - 管理者画像削除`);
+  console.log(`   PATCH  /api/admin/photos/:id?admin=19931124 - 管理者画像更新`);
+  console.log(`   GET    /health - ヘルスチェック`);
 });

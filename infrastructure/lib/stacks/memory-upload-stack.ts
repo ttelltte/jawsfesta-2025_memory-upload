@@ -25,6 +25,8 @@ export class MemoryUploadStack extends cdk.Stack {
   public readonly uploadFunction: lambda.Function;
   public readonly listFunction: lambda.Function;
   public readonly configFunction: lambda.Function;
+  public readonly adminDeleteFunction: lambda.Function;
+  public readonly adminUpdateFunction: lambda.Function;
 
   constructor(scope: Construct, id: string, props: MemoryUploadStackProps) {
     super(scope, id, props);
@@ -279,6 +281,72 @@ export class MemoryUploadStack extends cdk.Stack {
       description: `Lambda function for retrieving configuration (${environment})`,
     });
 
+    // Admin Delete Lambda 関数
+    this.adminDeleteFunction = new lambda.Function(this, 'AdminDeleteFunction', {
+      runtime: lambda.Runtime.NODEJS_18_X,
+      handler: 'index.handler',
+      code: lambda.Code.fromAsset(path.join(__dirname, '../../lambda/admin-delete')),
+      timeout: cdk.Duration.seconds(30),
+      memorySize: 256,
+      environment: {
+        // DynamoDB テーブル名
+        PHOTOS_TABLE_NAME: this.photosTable.tableName,
+        
+        // S3 バケット名
+        PHOTOS_BUCKET_NAME: this.photosBucket.bucketName,
+        
+        // 管理者パスワード
+        ADMIN_PASSWORD: config.admin?.password || '19931124',
+        
+        // 環境設定
+        ENVIRONMENT: environment,
+        REGION: this.region,
+        
+        // ログレベル
+        LOG_LEVEL: config.logging?.level || (environment === 'prod' ? 'WARN' : 'DEBUG'),
+        
+        // CORS設定
+        CORS_ALLOWED_ORIGINS: JSON.stringify(
+          config.apiGateway?.corsAllowedOrigins || 
+          (environment === 'prod' ? ['https://your-domain.com'] : ['*'])
+        ),
+      },
+      description: `Lambda function for admin photo deletion (${environment})`,
+    });
+
+    // Admin Update Lambda 関数
+    this.adminUpdateFunction = new lambda.Function(this, 'AdminUpdateFunction', {
+      runtime: lambda.Runtime.NODEJS_18_X,
+      handler: 'index.handler',
+      code: lambda.Code.fromAsset(path.join(__dirname, '../../lambda/admin-update')),
+      timeout: cdk.Duration.seconds(60), // 画像処理のため長めに設定
+      memorySize: 1024, // 画像処理のため多めに設定
+      environment: {
+        // DynamoDB テーブル名
+        PHOTOS_TABLE_NAME: this.photosTable.tableName,
+        
+        // S3 バケット名
+        PHOTOS_BUCKET_NAME: this.photosBucket.bucketName,
+        
+        // 管理者パスワード
+        ADMIN_PASSWORD: config.admin?.password || '19931124',
+        
+        // 環境設定
+        ENVIRONMENT: environment,
+        REGION: this.region,
+        
+        // ログレベル
+        LOG_LEVEL: config.logging?.level || (environment === 'prod' ? 'WARN' : 'DEBUG'),
+        
+        // CORS設定
+        CORS_ALLOWED_ORIGINS: JSON.stringify(
+          config.apiGateway?.corsAllowedOrigins || 
+          (environment === 'prod' ? ['https://your-domain.com'] : ['*'])
+        ),
+      },
+      description: `Lambda function for admin photo update (${environment})`,
+    });
+
     // ===========================================
     // IAM 権限設定（最小権限の原則）
     // ===========================================
@@ -336,6 +404,20 @@ export class MemoryUploadStack extends cdk.Stack {
     // DynamoDB: Config テーブルからの読み取り権限のみ
     this.configTable.grantReadData(this.configFunction);
 
+    // Admin Delete Lambda の権限
+    // S3: 画像削除権限（imagesフォルダのみ）
+    this.photosBucket.grantDelete(this.adminDeleteFunction, 'images/*');
+    
+    // DynamoDB: Photos テーブルの読み取り・削除権限
+    this.photosTable.grantReadWriteData(this.adminDeleteFunction);
+
+    // Admin Update Lambda の権限
+    // S3: 画像読み取り・更新権限（imagesフォルダのみ）
+    this.photosBucket.grantReadWrite(this.adminUpdateFunction, 'images/*');
+    
+    // DynamoDB: Photos テーブルの読み取り・更新権限
+    this.photosTable.grantReadWriteData(this.adminUpdateFunction);
+
     // 追加のIAMポリシー: Config Lambda用（特定のアイテムのみ読み取り）
     this.configFunction.addToRolePolicy(new iam.PolicyStatement({
       effect: iam.Effect.ALLOW,
@@ -369,6 +451,8 @@ export class MemoryUploadStack extends cdk.Stack {
     this.uploadFunction.addToRolePolicy(cloudWatchLogsPolicy);
     this.listFunction.addToRolePolicy(cloudWatchLogsPolicy);
     this.configFunction.addToRolePolicy(cloudWatchLogsPolicy);
+    this.adminDeleteFunction.addToRolePolicy(cloudWatchLogsPolicy);
+    this.adminUpdateFunction.addToRolePolicy(cloudWatchLogsPolicy);
 
     // ===========================================
     // API Gateway
@@ -382,7 +466,7 @@ export class MemoryUploadStack extends cdk.Stack {
       defaultCorsPreflightOptions: {
         allowOrigins: config.apiGateway?.corsAllowedOrigins || 
           (environment === 'prod' ? ['https://your-domain.com'] : apigateway.Cors.ALL_ORIGINS),
-        allowMethods: config.apiGateway?.corsAllowedMethods || ['GET', 'POST', 'OPTIONS'],
+        allowMethods: config.apiGateway?.corsAllowedMethods || ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
         allowHeaders: config.apiGateway?.corsAllowedHeaders || [
           'Content-Type',
           'X-Amz-Date',
@@ -425,7 +509,7 @@ export class MemoryUploadStack extends cdk.Stack {
       defaultCorsPreflightOptions: {
         allowOrigins: config.apiGateway?.corsAllowedOrigins || 
           (environment === 'prod' ? ['https://your-domain.com'] : apigateway.Cors.ALL_ORIGINS),
-        allowMethods: config.apiGateway?.corsAllowedMethods || ['GET', 'POST', 'OPTIONS'],
+        allowMethods: config.apiGateway?.corsAllowedMethods || ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
         allowHeaders: config.apiGateway?.corsAllowedHeaders || [
           'Content-Type',
           'X-Amz-Date',
@@ -455,6 +539,65 @@ export class MemoryUploadStack extends cdk.Stack {
     const configResource = apiResource.addResource('config');
     configResource.addMethod('GET', new apigateway.LambdaIntegration(this.configFunction, {
       // プロキシ統合を使用してシンプルに設定
+      proxy: true,
+    }));
+
+    // /api/admin エンドポイント - 管理者機能用
+    const adminResource = apiResource.addResource('admin', {
+      defaultCorsPreflightOptions: {
+        allowOrigins: config.apiGateway?.corsAllowedOrigins || 
+          (environment === 'prod' ? ['https://your-domain.com'] : apigateway.Cors.ALL_ORIGINS),
+        allowMethods: ['PATCH', 'DELETE', 'OPTIONS'],
+        allowHeaders: [
+          'Content-Type',
+          'X-Amz-Date',
+          'Authorization',
+          'X-Api-Key',
+          'X-Amz-Security-Token',
+          'X-Requested-With',
+        ],
+      },
+    });
+    
+    const adminPhotosResource = adminResource.addResource('photos', {
+      defaultCorsPreflightOptions: {
+        allowOrigins: config.apiGateway?.corsAllowedOrigins || 
+          (environment === 'prod' ? ['https://your-domain.com'] : apigateway.Cors.ALL_ORIGINS),
+        allowMethods: ['PATCH', 'DELETE', 'OPTIONS'],
+        allowHeaders: [
+          'Content-Type',
+          'X-Amz-Date',
+          'Authorization',
+          'X-Api-Key',
+          'X-Amz-Security-Token',
+          'X-Requested-With',
+        ],
+      },
+    });
+    
+    const adminPhotoResource = adminPhotosResource.addResource('{photoId}', {
+      defaultCorsPreflightOptions: {
+        allowOrigins: config.apiGateway?.corsAllowedOrigins || 
+          (environment === 'prod' ? ['https://your-domain.com'] : apigateway.Cors.ALL_ORIGINS),
+        allowMethods: ['PATCH', 'DELETE', 'OPTIONS'],
+        allowHeaders: [
+          'Content-Type',
+          'X-Amz-Date',
+          'Authorization',
+          'X-Api-Key',
+          'X-Amz-Security-Token',
+          'X-Requested-With',
+        ],
+      },
+    });
+    
+    // DELETE /api/admin/photos/{photoId} - 画像削除
+    adminPhotoResource.addMethod('DELETE', new apigateway.LambdaIntegration(this.adminDeleteFunction, {
+      proxy: true,
+    }));
+    
+    // PATCH /api/admin/photos/{photoId} - 画像更新
+    adminPhotoResource.addMethod('PATCH', new apigateway.LambdaIntegration(this.adminUpdateFunction, {
       proxy: true,
     }));
 
@@ -634,6 +777,18 @@ export class MemoryUploadStack extends cdk.Stack {
       value: this.configFunction.functionName,
       description: 'Config Lambda Function Name',
       exportName: `${this.stackName}-ConfigFunctionName`,
+    });
+
+    new cdk.CfnOutput(this, 'AdminDeleteFunctionName', {
+      value: this.adminDeleteFunction.functionName,
+      description: 'Admin Delete Lambda Function Name',
+      exportName: `${this.stackName}-AdminDeleteFunctionName`,
+    });
+
+    new cdk.CfnOutput(this, 'AdminUpdateFunctionName', {
+      value: this.adminUpdateFunction.functionName,
+      description: 'Admin Update Lambda Function Name',
+      exportName: `${this.stackName}-AdminUpdateFunctionName`,
     });
   }
 }
