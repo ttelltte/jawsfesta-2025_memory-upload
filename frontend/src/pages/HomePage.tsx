@@ -1,15 +1,22 @@
 import React, { useState, useEffect } from 'react'
-import { ImageUpload, MetadataForm, ConfirmationDialog, UploadProgress, ErrorMessage, type MetadataFormData, GallerySkeleton } from '../components'
+import { ImageUpload, MetadataForm, ConfirmationDialog, UploadProgress, ErrorMessage, type MetadataFormData, GallerySkeleton, AdminEditDialog } from '../components'
 import { UploadSuccessMessage } from '../components/SuccessMessage'
 import { validateFile, normalizeError, logError } from '../utils'
+import { useAdmin } from '../hooks/useAdmin'
 
 import { uploadImage, canUpload, type UploadProgress as UploadProgressType } from '../api/upload'
 import { fetchPhotos, Photo } from '../api/photos'
+import { deletePhoto, updatePhoto } from '../api/admin'
 
 type LayoutType = 'masonry' | 'grid'
 
 // マソンリーレイアウトコンポーネント
-const MasonryLayout: React.FC<{ photos: Photo[], onImageClick: (photo: Photo) => void }> = ({ photos, onImageClick }) => {
+const MasonryLayout: React.FC<{ 
+  photos: Photo[], 
+  onImageClick: (photo: Photo) => void,
+  isAdmin?: boolean,
+  onAdminEdit?: (photo: Photo) => void
+}> = ({ photos, onImageClick, isAdmin = false, onAdminEdit }) => {
   const [isMobile, setIsMobile] = useState(false)
 
   useEffect(() => {
@@ -64,9 +71,24 @@ const MasonryLayout: React.FC<{ photos: Photo[], onImageClick: (photo: Photo) =>
                     {photo.uploaderName.length > 8 ? `${photo.uploaderName.substring(0, 8)}...` : photo.uploaderName}
                   </div>
                 )}
+
+                {/* 管理者ボタン */}
+                {isAdmin && onAdminEdit && (
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      onAdminEdit(photo)
+                    }}
+                    className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition-colors shadow-lg z-20"
+                    style={{ zIndex: 20 }}
+                  >
+                    <i className="fas fa-cog text-sm"></i>
+                  </button>
+                )}
                 
                 {/* ホバー時の詳細表示 */}
-                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-60 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
+                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-60 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100 z-10">
                   <div className="text-white text-center">
                     <i className="fas fa-search-plus text-2xl sm:text-3xl mb-2"></i>
                     <div className="text-xs sm:text-sm font-medium">詳細を見る</div>
@@ -104,6 +126,11 @@ export const HomePage: React.FC = () => {
   // ページネーション関連のstate
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(20)
+
+  // 管理者機能関連のstate
+  const isAdmin = useAdmin()
+  const [showAdminEdit, setShowAdminEdit] = useState(false)
+  const [editingPhoto, setEditingPhoto] = useState<Photo | null>(null)
 
   // アップロード関連の処理
   const handleImageSelect = (file: File | null) => {
@@ -271,6 +298,54 @@ export const HomePage: React.FC = () => {
     setCurrentPage(1) // 表示件数変更時は1ページ目に戻る
   }
 
+  // 管理者機能のハンドラー
+  const handleAdminEdit = (photo: Photo) => {
+    console.log('管理者編集ボタンがクリックされました:', photo.id)
+    setEditingPhoto(photo)
+    setShowAdminEdit(true)
+  }
+
+  const handleAdminSave = async (updates: any) => {
+    if (!editingPhoto) return
+
+    try {
+      const response = await updatePhoto(editingPhoto.id, updates)
+      if (response.success) {
+        // ギャラリーを更新
+        loadPhotos()
+        setShowAdminEdit(false)
+        setEditingPhoto(null)
+      } else {
+        console.error('更新エラー:', response.error)
+      }
+    } catch (error) {
+      console.error('更新エラー:', error)
+    }
+  }
+
+  const handleAdminDelete = async () => {
+    if (!editingPhoto) return
+
+    try {
+      const response = await deletePhoto(editingPhoto.id)
+      if (response.success) {
+        // ギャラリーを更新
+        loadPhotos()
+        setShowAdminEdit(false)
+        setEditingPhoto(null)
+      } else {
+        console.error('削除エラー:', response.error)
+      }
+    } catch (error) {
+      console.error('削除エラー:', error)
+    }
+  }
+
+  const handleAdminCancel = () => {
+    setShowAdminEdit(false)
+    setEditingPhoto(null)
+  }
+
 
 
   // 初期化処理
@@ -300,6 +375,12 @@ export const HomePage: React.FC = () => {
           <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 mb-2">
             JAWS FESTA 2025 思い出アップロード
           </h1>
+          {isAdmin && (
+            <div className="inline-flex items-center gap-2 bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-medium">
+              <i className="fas fa-shield-alt"></i>
+              管理者モード
+            </div>
+          )}
         </div>
 
         {/* アップロードセクション */}
@@ -465,7 +546,12 @@ export const HomePage: React.FC = () => {
           ) : (
             <>
               {layout === 'masonry' ? (
-                <MasonryLayout photos={currentPhotos} onImageClick={handleImageClick} />
+                <MasonryLayout 
+                  photos={currentPhotos} 
+                  onImageClick={handleImageClick}
+                  isAdmin={isAdmin}
+                  onAdminEdit={handleAdminEdit}
+                />
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
                   {currentPhotos.map((photo) => (
@@ -491,7 +577,22 @@ export const HomePage: React.FC = () => {
                           </div>
                         )}
                         
-                        <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-60 transition-all duration-300 flex items-center justify-center opacity-0 hover:opacity-100">
+                        {/* 管理者ボタン */}
+                        {isAdmin && (
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault()
+                              e.stopPropagation()
+                              handleAdminEdit(photo)
+                            }}
+                            className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition-colors shadow-lg z-20"
+                            style={{ zIndex: 20 }}
+                          >
+                            <i className="fas fa-cog text-sm"></i>
+                          </button>
+                        )}
+
+                        <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-60 transition-all duration-300 flex items-center justify-center opacity-0 hover:opacity-100 z-10">
                           <div className="text-white text-center">
                             <i className="fas fa-search-plus text-2xl sm:text-3xl mb-2"></i>
                             <div className="text-xs sm:text-sm font-medium">詳細を見る</div>
@@ -603,6 +704,15 @@ export const HomePage: React.FC = () => {
             </div>
           )}
         </div>
+
+        {/* 管理者編集ダイアログ */}
+        <AdminEditDialog
+          isOpen={showAdminEdit}
+          photo={editingPhoto}
+          onSave={handleAdminSave}
+          onCancel={handleAdminCancel}
+          onDelete={handleAdminDelete}
+        />
 
         {/* 画像詳細モーダル - 画像最大表示 */}
         {selectedPhoto && (
