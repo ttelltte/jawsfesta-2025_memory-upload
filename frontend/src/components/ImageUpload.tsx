@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react'
+import React, { useState, useRef, useCallback, useEffect } from 'react'
 import ErrorMessage from './ErrorMessage'
 import { validateFile, formatFileSize, getFileTypeDescription } from '../utils'
 
@@ -15,7 +15,30 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
 }) => {
   const [isDragOver, setIsDragOver] = useState(false)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+
+  const [isMobile, setIsMobile] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+
+  // モバイルデバイスの判定（シンプルに画面幅で判定）
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 640) // スマートフォンサイズのみ
+    }
+
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
+
+  // コンポーネントのクリーンアップ
+  useEffect(() => {
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl)
+      }
+    }
+  }, [previewUrl])
 
   // ファイル選択処理
   const handleFileSelect = useCallback((file: File) => {
@@ -24,14 +47,14 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
       maxSizeInMB: 10,
       allowedTypes: ['image/*']
     })
-    
+
     if (!validation.isValid) {
       onImageSelect(null as any) // エラー時は選択をクリア
       return // エラーは親コンポーネントで処理される
     }
-    
+
     onImageSelect(file)
-    
+
     // プレビュー用のURLを生成
     const url = URL.createObjectURL(file)
     setPreviewUrl(url)
@@ -43,7 +66,10 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
     if (file) {
       handleFileSelect(file)
     }
+    resetFileInputState()
   }
+
+
 
   // ドラッグ&ドロップ処理
   const handleDragOver = (event: React.DragEvent) => {
@@ -59,7 +85,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
   const handleDrop = (event: React.DragEvent) => {
     event.preventDefault()
     setIsDragOver(false)
-    
+
     const files = event.dataTransfer.files
     if (files.length > 0) {
       handleFileSelect(files[0])
@@ -68,14 +94,15 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
 
   // ファイル選択ボタンクリック
   const handleFileButtonClick = () => {
-    fileInputRef.current?.click()
+    if (fileInputRef.current) {
+      fileInputRef.current.click()
+    }
   }
 
-  // カメラ撮影ボタンクリック（モバイル対応）
-  const handleCameraClick = () => {
+  // ファイル入力の状態をリセット
+  const resetFileInputState = () => {
     if (fileInputRef.current) {
-      fileInputRef.current.setAttribute('capture', 'environment')
-      fileInputRef.current.click()
+      fileInputRef.current.value = ''
     }
   }
 
@@ -86,9 +113,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
       setPreviewUrl(null)
     }
     onImageSelect(null as any) // 選択をクリア
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ''
-    }
+    resetFileInputState() // ファイル入力の状態をリセット
   }
 
   return (
@@ -130,8 +155,8 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
         <div
           className={`
             border-2 border-dashed rounded-lg p-8 text-center transition-colors
-            ${isDragOver 
-              ? 'border-blue-400 bg-blue-50' 
+            ${isDragOver
+              ? 'border-blue-400 bg-blue-50'
               : 'border-gray-300 hover:border-gray-400'
             }
           `}
@@ -166,18 +191,13 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <button
                 onClick={handleFileButtonClick}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-                data-testid="file-select-button"
+                className={`${isMobile
+                  ? 'w-full px-6 py-3 text-lg'
+                  : 'px-6 py-2'
+                  } bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium`}
+                data-testid="upload-button"
               >
-                📁 ファイルを選択
-              </button>
-              
-              <button
-                onClick={handleCameraClick}
-                className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium sm:hidden"
-                data-testid="camera-button"
-              >
-                📷 カメラで撮影
+                📷 画像をアップロード
               </button>
             </div>
 
@@ -199,6 +219,8 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
         onChange={handleFileInputChange}
         className="hidden"
       />
+
+
     </div>
   )
 }
