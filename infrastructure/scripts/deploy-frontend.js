@@ -217,9 +217,9 @@ async function clearS3Bucket(bucketName) {
       return;
     }
     
-    // images/フォルダ（ユーザー投稿画像）以外のオブジェクトをフィルタリング
+    // images/フォルダ（ユーザー投稿画像）とassets/フォルダ（サイトアセット）以外をフィルタリング
     const objectsToDelete = listResponse.Contents.filter(object => {
-      return object.Key && !object.Key.startsWith('images/');
+      return object.Key && !object.Key.startsWith('images/') && !object.Key.startsWith('assets/');
     });
     
     if (objectsToDelete.length === 0) {
@@ -242,10 +242,13 @@ async function clearS3Bucket(bucketName) {
       }
     }
     
-    // 保持されたimages/ファイルの数を表示
-    const imagesCount = listResponse.Contents.length - objectsToDelete.length;
-    if (imagesCount > 0) {
+    // 保持されたファイルの数を表示
+    const preservedCount = listResponse.Contents.length - objectsToDelete.length;
+    if (preservedCount > 0) {
+      const imagesCount = listResponse.Contents.filter(obj => obj.Key && obj.Key.startsWith('images/')).length;
+      const assetsCount = listResponse.Contents.filter(obj => obj.Key && obj.Key.startsWith('assets/')).length;
       console.log(`📷 images/フォルダ内の ${imagesCount} 個のファイルを保持しました。`);
+      console.log(`🎨 assets/フォルダ内の ${assetsCount} 個のファイルを保持しました。`);
     }
     
     console.log('✅ S3バケットのクリアが完了しました。');
@@ -269,8 +272,10 @@ async function clearS3Bucket(bucketName) {
   }
 }
 
+
+
 /**
- * ファイルをS3にアップロード
+ * ファイルをS3にアップロード（変更チェック付き、順序最適化）
  */
 async function uploadToS3(bucketName) {
   console.log('☁️  S3にファイルをアップロード中...');
@@ -285,11 +290,29 @@ async function uploadToS3(bucketName) {
       process.exit(1);
     }
     
-    console.log(`📁 ${files.length} 個のファイルをアップロード中...`);
+    // サイト画像のみ除外、JS/CSSはアップロード
+    const filesToUpload = files.filter(f => {
+      // assets/フォルダのJS/CSSはアップロード
+      if (f.s3Key.startsWith('assets/') && f.s3Key.match(/\.(js|css)$/)) return true;
+      // assets/フォルダの画像は除外
+      if (f.s3Key.startsWith('assets/')) return false;
+      // images/フォルダのサイト画像を除外
+      if (f.s3Key.startsWith('images/') && 
+          (f.s3Key.includes('JAWS') || f.s3Key.includes('background'))) return false;
+      return true;
+    });
+    
+    // アップロード順序: HTML最後（断を最小化）
+    const htmlFiles = filesToUpload.filter(f => f.s3Key === 'index.html');
+    const otherFiles = filesToUpload.filter(f => f.s3Key !== 'index.html');
+    const orderedFiles = [...otherFiles, ...htmlFiles];
+    
+    console.log(`📁 ${filesToUpload.length} 個のファイルをアップロード中... (サイト画像はスキップ)`);
     
     // 各ファイルをアップロード
-    for (const file of files) {
+    for (const file of orderedFiles) {
       const fileContent = fs.readFileSync(file.localPath);
+      
       const contentType = mime.lookup(file.localPath) || 'application/octet-stream';
       
       // キャッシュ設定
@@ -327,7 +350,7 @@ async function uploadToS3(bucketName) {
       console.log(`   アップロード: ${file.s3Key} (${contentType})`);
     }
     
-    console.log('✅ S3へのアップロードが完了しました。');
+    console.log(`✅ S3へのアップロードが完了しました。`);
     
   } catch (error) {
     console.error('❌ S3へのアップロードに失敗しました:');
