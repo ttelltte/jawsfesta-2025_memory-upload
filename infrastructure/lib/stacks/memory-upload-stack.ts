@@ -89,8 +89,8 @@ export class MemoryUploadStack extends cdk.Stack {
         ? cdk.RemovalPolicy.RETAIN
         : cdk.RemovalPolicy.DESTROY,
 
-      // バージョニング（本番環境では有効化）
-      versioned: environment === 'prod',
+      // バージョニング（誤削除対策で全環境で有効化）
+      versioned: true,
     });
 
     // ===========================================

@@ -235,7 +235,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
             <div className="flex gap-2 justify-center">
               <button
                 onClick={handleImageRotate}
-                className="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm hover:bg-blue-600 transition-colors flex items-center gap-2"
+                className="px-4 py-2 bg-yellow-600 text-white rounded-lg text-sm hover:bg-yellow-700 transition-colors flex items-center gap-2"
               >
                 <i className="fas fa-redo"></i>
                 回転
@@ -251,7 +251,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
                   </button>
                   <button
                     onClick={handleApplyRotation}
-                    className="px-4 py-2 bg-green-500 text-white rounded-lg text-sm hover:bg-green-600 transition-colors flex items-center gap-2"
+                    className="px-4 py-2 bg-yellow-600 text-white rounded-lg text-sm hover:bg-yellow-700 transition-colors flex items-center gap-2"
                   >
                     <i className="fas fa-check"></i>
                     適用
@@ -315,7 +315,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
                 className={`${isMobile
                   ? 'w-full px-6 py-3 text-lg'
                   : 'px-6 py-2'
-                  } bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center justify-center gap-2`}
+                  } bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors font-medium flex items-center justify-center gap-2`}
                 data-testid="upload-button"
               >
                 <i className={`fas ${isMobile ? 'fa-camera' : 'fa-cloud-upload-alt'}`}></i>

@@ -368,13 +368,33 @@ export const HomePage: React.FC = () => {
   }, [selectedPhoto])
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6 md:py-8">
+    <div className="min-h-screen relative" style={{
+      backgroundImage: 'url(/assets/background_gold_large.png)',
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundAttachment: 'fixed',
+      fontFamily: '"Yu Mincho", "YuMincho", "Hiragino Mincho ProN", "HG明朝", serif'
+    }}>
+      {/* 背景オーバーレイ */}
+      <div className="absolute inset-0 bg-white bg-opacity-85"></div>
+      
+      <div className="relative z-10 max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6 md:py-8">
         {/* ヘッダー */}
         <div className="text-center mb-6 sm:mb-8">
+          {/* メインロゴ */}
+          <div className="mb-4">
+            <img 
+              src="/assets/JAWSFESTA2025筆文字_1色_金.png" 
+              alt="JAWS FESTA 2025" 
+              className="mx-auto w-full max-w-md sm:max-w-lg md:max-w-xl h-auto object-contain"
+            />
+          </div>
+          
+          {/* サブタイトル */}
           <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 mb-2">
-            JAWS FESTA 2025 思い出アップロード
+            お祭りトラック：思い出アップロード
           </h1>
+          
           {isAdmin && (
             <div className="inline-flex items-center gap-2 bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-medium">
               <i className="fas fa-shield-alt"></i>
@@ -384,7 +404,7 @@ export const HomePage: React.FC = () => {
         </div>
 
         {/* アップロードセクション */}
-        <div className="bg-white rounded-xl sm:rounded-2xl shadow-xl p-4 sm:p-6 md:p-8 mb-8 sm:mb-12">
+        <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6 md:p-8 mb-8 sm:mb-12">
           
           {/* 成功メッセージ */}
           {successMessage && (
@@ -464,7 +484,7 @@ export const HomePage: React.FC = () => {
         {/* ギャラリーセクション */}
         <div id="gallery-section">
           {!galleryLoading && !galleryError && photos.length > 0 && (
-            <div className="bg-white rounded-lg shadow-sm border p-4 mb-6">
+            <div className="bg-white rounded-lg shadow-sm border border-yellow-200 p-4 mb-6">
               {/* 上段：思い出の件数 */}
               <div className="flex items-center justify-center mb-4">
                 <div className="text-gray-700 font-medium text-base sm:text-lg">
@@ -504,7 +524,7 @@ export const HomePage: React.FC = () => {
                       onClick={() => setLayout('masonry')}
                       className={`px-3 py-1 rounded-md text-xs font-medium transition-all flex items-center gap-1 ${
                         layout === 'masonry'
-                          ? 'bg-blue-500 text-white shadow-sm'
+                          ? 'bg-yellow-600 text-white shadow-sm'
                           : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
                       }`}
                     >
@@ -515,7 +535,7 @@ export const HomePage: React.FC = () => {
                       onClick={() => setLayout('grid')}
                       className={`px-3 py-1 rounded-md text-xs font-medium transition-all flex items-center gap-1 ${
                         layout === 'grid'
-                          ? 'bg-blue-500 text-white shadow-sm'
+                          ? 'bg-yellow-600 text-white shadow-sm'
                           : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
                       }`}
                     >

@@ -149,7 +149,7 @@ async function buildFrontend() {
     
     // npm install（必要に応じて）
     console.log('📦 依存関係を確認中...');
-    execSync('npm ci', { 
+    execSync('npm install', { 
       cwd: FRONTEND_DIR, 
       stdio: 'inherit',
       env 
@@ -217,7 +217,7 @@ async function clearS3Bucket(bucketName) {
       return;
     }
     
-    // images/フォルダ以外のオブジェクトをフィルタリング
+    // images/フォルダ（ユーザー投稿画像）以外のオブジェクトをフィルタリング
     const objectsToDelete = listResponse.Contents.filter(object => {
       return object.Key && !object.Key.startsWith('images/');
     });

@@ -65,9 +65,9 @@
     "typescript": "~5.2.2"
   },
   "dependencies": {
-    "@aws-sdk/client-cloudfront": "^3.893.0",
+    "@aws-sdk/client-cloudfront": "^3.896.0",
     "@aws-sdk/client-dynamodb": "^3.490.0",
-    "@aws-sdk/client-s3": "^3.893.0",
+    "@aws-sdk/client-s3": "^3.896.0",
     "@aws-sdk/lib-dynamodb": "^3.490.0",
     "aws-cdk-lib": "^2.215.0",
     "constructs": "^10.3.0",

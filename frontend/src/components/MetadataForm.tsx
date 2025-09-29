@@ -93,7 +93,7 @@ export const MetadataForm: React.FC<MetadataFormProps> = ({
           onChange={(e) => handleInputChange('uploaderName', e.target.value)}
           placeholder="例: 山田太郎"
           className={`
-            w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500
+            w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500
             ${validationErrors.uploaderName 
               ? 'border-red-300 focus:ring-red-500' 
               : 'border-gray-300'
@@ -123,7 +123,7 @@ export const MetadataForm: React.FC<MetadataFormProps> = ({
           placeholder="例: お祭り最高！！"
           rows={3}
           className={`
-            w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-vertical
+            w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 resize-vertical
             ${validationErrors.comment 
               ? 'border-red-300 focus:ring-red-500' 
               : 'border-gray-300'
@@ -151,7 +151,7 @@ export const MetadataForm: React.FC<MetadataFormProps> = ({
             w-full py-3 px-4 rounded-lg font-medium transition-colors
             ${isSubmitting || disabled
               ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
-              : 'bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
+              : 'bg-yellow-600 text-white hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2'
             }
           `}
           data-testid="upload-button"
