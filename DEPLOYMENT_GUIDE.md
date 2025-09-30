@@ -59,6 +59,22 @@ s3://bucket-name/
 └── index.html        # メインHTML（毎回更新）
 ```
 
+### 🔐 管理者機能
+
+**アクセス方法:**
+```
+https://your-domain.com?admin=<ADMIN_PASSWORD>
+```
+
+**機能:**
+- 画像削除（DELETE /api/admin/photos/{id}）
+- 画像情報編集（PATCH /api/admin/photos/{id}）
+- 画像回転（90度単位）
+
+**Lambda関数:**
+- AdminDeleteFunction: 画像削除処理
+- AdminUpdateFunction: 画像更新・回転処理
+
 **デプロイ対象ファイル:**
 - ✅ **毎回アップロード**: index.html, assets/css/*, assets/js/*, favicon等
 - ⛔ **スキップ**: assets/内の画像ファイル
@@ -231,6 +247,101 @@ npm run build
 # 解決: 最適化デプロイスクリプト使用
 cd infrastructure
 node scripts/deploy-frontend.js dev --build
+```
+
+## 🔧 詳細トラブルシューティング
+
+### 🚑 緊急時の対応
+
+```bash
+# サービス停止時の対応
+# 1. CloudWatch でエラーログを確認
+# 2. Lambda 関数の実行状況を確認
+# 3. DynamoDB と S3 の状態を確認
+# 4. 必要に応じてロールバック
+
+cd infrastructure
+npx cdk deploy --rollback
+```
+
+### 🌐 CORSエラー
+
+```bash
+# config/dev.json で CORS 設定を確認・修正
+{
+  "apiGateway": {
+    "corsAllowedOrigins": [
+      "http://localhost:3000",
+      "http://localhost:5173", 
+      "https://your-actual-domain.com"
+    ]
+  }
+}
+
+# 再デプロイ
+npm run deploy:dev
+```
+
+### 📊 パフォーマンス問題
+
+```bash
+# Lambda のメモリサイズを増やす
+# config/dev.json
+{
+  "lambda": {
+    "memorySize": 512,  # 256 → 512 に増加
+    "timeout": 30
+  }
+}
+
+# CloudWatch でパフォーマンスメトリクスを確認
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/Lambda \
+  --metric-name Duration \
+  --dimensions Name=FunctionName,Value=YOUR_FUNCTION_NAME
+```
+
+### 📁 ログの確認
+
+```bash
+# Lambda 関数のログをリアルタイム表示
+aws logs tail /aws/lambda/JawsFestaMemoryUpload-upload --follow
+
+# 管理者機能のログ確認
+aws logs tail /aws/lambda/JawsFestaMemoryUploadDev-AdminUpdateFunction --follow
+aws logs tail /aws/lambda/JawsFestaMemoryUploadDev-AdminDeleteFunction --follow
+
+# エラーログのみフィルタ
+aws logs filter-log-events \
+  --log-group-name "/aws/lambda/JawsFestaMemoryUpload-upload" \
+  --filter-pattern "ERROR"
+```
+
+## ⚙️ 環境変数詳細設定
+
+### 必須環境変数
+
+| 項目 | 説明 | 例 |
+|------|------|-----|
+| `stackName` | CloudFormation スタック名 | `JawsFestaMemoryUploadDev` |
+| `account` | AWS アカウント ID | `123456789012` |
+| `region` | AWS リージョン | `ap-northeast-1` |
+| `domainName` | カスタムドメイン名 | `your-domain.example.com` |
+| `certificateArn` | SSL証明書のARN | `arn:aws:acm:us-east-1:...` |
+
+### AWS認証情報の設定
+
+```bash
+# AWS CLIで設定
+aws configure
+
+# 環境変数で設定
+export AWS_ACCESS_KEY_ID=your-access-key
+export AWS_SECRET_ACCESS_KEY=your-secret-key
+export AWS_DEFAULT_REGION=ap-northeast-1
+
+# プロファイルで設定
+export AWS_PROFILE=your-profile-name
 ```
 
 ## 📊 デプロイ結果の確認

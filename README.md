@@ -7,7 +7,8 @@ JAWS FESTA 2025 イベント参加者が撮影した画像を簡単に共有で�
 - 📱 **スマートフォン対応**: カメラ撮影・ファイル選択・ドラッグ&ドロップでの画像アップロード
 - 🖼️ **画像一覧表示**: マソンリーレイアウト・カードグリッドレイアウトの切り替え可能
 - ✅ **確認項目チェック**: 動的に設定可能な確認項目でのアップロード前チェック
-- 🔄 **自動削除**: 30日後の自動削除機能（DynamoDB TTL）
+- 🔄 **自動削除**: 90日後の自動削除機能（DynamoDB TTL）
+- 🔐 **管理者機能**: 画像削除・編集・回転機能（管理者パスワード必要）
 - 📱 **レスポンシブデザイン**: モバイル・タブレット・PC対応
 - 🎨 **ブランド化**: JAWS FESTA 2025公式ロゴ・金色テーマ・游明朝フォント
 - ⚡ **高速デプロイ**: 最適化されたデプロイスクリプト（変更ファイルのみアップロード）
@@ -214,7 +215,21 @@ jaws-festa-memory-upload/
   "stackName": "JawsFestaMemoryUploadDev",
   "environment": "dev",
   "region": "ap-northeast-1",
-  "domainName": "dev-memory.example.com"
+  "account": "123456789012",
+  "domainName": "your-domain.example.com",
+  "certificateArn": "arn:aws:acm:us-east-1:123456789012:certificate/...",
+  "dynamodb": {
+    "ttlDays": 90
+  },
+  "cloudfront": {
+    "customDomain": {
+      "enabled": true
+    },
+    "geoRestriction": {
+      "enabled": true,
+      "locations": ["JP"]
+    }
+  }
 }
 ```
 
@@ -257,6 +272,6 @@ DynamoDB の Config テーブルで確認項目を動的に変更できます：
 `infrastructure/lib/constructs/database.ts` で TTL 設定を変更：
 
 ```typescript
-// 30日 → 60日に変更する場合
+// 90日 → 60日に変更する場合
 const ttlInSeconds = 60 * 24 * 60 * 60; // 60日
 ```
