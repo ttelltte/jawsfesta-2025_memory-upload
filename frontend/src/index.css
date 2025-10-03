@@ -27,6 +27,10 @@ body {
   /* スクロールの最適化 */
   -webkit-overflow-scrolling: touch;
   overflow-x: hidden;
+  
+  /* 背景色を金色テーマに合わせる */
+  background-color: #FFF8DC; /* コーンシルク色 - 薄い金色 */
+  background: linear-gradient(135deg, #FFF8DC 0%, #FFEAA7 100%);
 }
 
 /* ボタンとインタラクティブ要素の最適化 */

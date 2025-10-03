@@ -77,14 +77,14 @@ export const MetadataForm: React.FC<MetadataFormProps> = ({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-3">
       {/* エラーメッセージ */}
       {error && <ErrorMessage message={error} type="error" />}
       
-      {/* 名前入力フィールド */}
+      {/* 名前入力フィールド - コンパクト */}
       <div>
-        <label htmlFor="uploaderName" className="block text-sm font-medium text-gray-700 mb-2">
-          お名前（任意）
+        <label htmlFor="uploaderName" className="block text-xs font-medium text-gray-700 mb-1">
+          お名前（任意・空欄で匿名）
         </label>
         <input
           type="text"
@@ -93,7 +93,7 @@ export const MetadataForm: React.FC<MetadataFormProps> = ({
           onChange={(e) => handleInputChange('uploaderName', e.target.value)}
           placeholder="例: 山田太郎"
           className={`
-            w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500
+            w-full px-2 py-1.5 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-yellow-500
             ${validationErrors.uploaderName 
               ? 'border-red-300 focus:ring-red-500' 
               : 'border-gray-300'
@@ -104,16 +104,13 @@ export const MetadataForm: React.FC<MetadataFormProps> = ({
           data-testid="uploader-name"
         />
         {validationErrors.uploaderName && (
-          <p className="mt-1 text-sm text-red-600">{validationErrors.uploaderName}</p>
+          <p className="mt-0.5 text-xs text-red-600">{validationErrors.uploaderName}</p>
         )}
-        <p className="mt-1 text-xs text-gray-500">
-          空欄の場合は「匿名」として表示されます
-        </p>
       </div>
 
-      {/* 一言入力フィールド */}
+      {/* 一言入力フィールド - コンパクト */}
       <div>
-        <label htmlFor="comment" className="block text-sm font-medium text-gray-700 mb-2">
+        <label htmlFor="comment" className="block text-xs font-medium text-gray-700 mb-1">
           一言（任意）
         </label>
         <textarea
@@ -121,9 +118,9 @@ export const MetadataForm: React.FC<MetadataFormProps> = ({
           value={formData.comment}
           onChange={(e) => handleInputChange('comment', e.target.value)}
           placeholder="例: お祭り最高！！"
-          rows={3}
+          rows={2}
           className={`
-            w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 resize-vertical
+            w-full px-2 py-1.5 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-yellow-500 resize-vertical
             ${validationErrors.comment 
               ? 'border-red-300 focus:ring-red-500' 
               : 'border-gray-300'
@@ -134,38 +131,35 @@ export const MetadataForm: React.FC<MetadataFormProps> = ({
           data-testid="comment"
         />
         {validationErrors.comment && (
-          <p className="mt-1 text-sm text-red-600">{validationErrors.comment}</p>
+          <p className="mt-0.5 text-xs text-red-600">{validationErrors.comment}</p>
         )}
-        <div className="mt-1 flex justify-between text-xs text-gray-500">
-          <span>思い出や感想などを自由にお書きください</span>
-          <span>{formData.comment.length}/100</span>
+        <div className="mt-0.5 text-right text-xs text-gray-400">
+          {formData.comment.length}/100
         </div>
       </div>
 
-      {/* 送信ボタン */}
-      <div className="pt-4">
+      {/* 送信ボタン - コンパクト */}
+      <div className="pt-2">
         <button
           type="submit"
           disabled={isSubmitting || disabled}
           className={`
-            w-full py-3 px-4 rounded-lg font-medium transition-colors
+            w-full py-2 px-3 rounded text-sm font-medium transition-colors
             ${isSubmitting || disabled
               ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
-              : 'bg-yellow-600 text-white hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2'
+              : 'bg-yellow-600 text-white hover:bg-yellow-700'
             }
           `}
           data-testid="upload-button"
         >
           {isSubmitting ? (
             <span className="flex items-center justify-center">
-              <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-gray-200" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-gray-200" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
               アップロード中...
             </span>
-          ) : disabled ? (
-            '確認項目をチェックしてください'
           ) : (
             'アップロード'
           )}

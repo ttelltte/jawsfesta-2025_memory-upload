@@ -359,13 +359,24 @@ export const HomePage: React.FC = () => {
   // スクロール監視でフローティングボタンの表示/非表示を制御
   useEffect(() => {
     const handleScroll = () => {
-      // 300px以上スクロールしたらボタンを表示
-      setShowFloatingButton(window.scrollY > 300)
+      // ギャラリーセクションの位置を取得
+      const gallerySection = document.getElementById('gallery-section')
+      if (!gallerySection) {
+        setShowFloatingButton(false)
+        return
+      }
+      
+      const gallerySectionTop = gallerySection.offsetTop
+      const currentScroll = window.scrollY
+      
+      // ギャラリーセクションに到達したらボタンを表示
+      setShowFloatingButton(currentScroll >= gallerySectionTop - 100)
     }
 
     window.addEventListener('scroll', handleScroll)
+    handleScroll() // 初回実行
     return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
+  }, [photos])
 
   // ESCキーでモーダルを閉じる
   useEffect(() => {
@@ -398,33 +409,33 @@ export const HomePage: React.FC = () => {
       {/* 背景オーバーレイ */}
       <div className="absolute inset-0 bg-white bg-opacity-85"></div>
       
-      <div className="relative z-10 max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6 md:py-8">
-        {/* ヘッダー */}
-        <div className="text-center mb-6 sm:mb-8">
-          {/* メインロゴ */}
-          <div className="mb-4">
+      <div className="relative z-10 max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
+        {/* ヘッダー - コンパクト */}
+        <div className="text-center mb-4">
+          {/* メインロゴ - 小さく */}
+          <div className="mb-2">
             <img 
               src="/assets/JAWSFESTA2025筆文字_1色_金.png" 
               alt="JAWS FESTA 2025" 
-              className="mx-auto w-full max-w-md sm:max-w-lg md:max-w-xl h-auto object-contain"
+              className="mx-auto w-full max-w-xs sm:max-w-sm h-auto object-contain"
             />
           </div>
           
-          {/* サブタイトル */}
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 mb-2">
+          {/* サブタイトル - コンパクト */}
+          <h1 className="text-base sm:text-lg font-bold text-gray-800 mb-1">
             お祭りトラック：思い出アップロード
           </h1>
           
           {isAdmin && (
-            <div className="inline-flex items-center gap-2 bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-medium">
+            <div className="inline-flex items-center gap-1 bg-red-100 text-red-800 px-2 py-0.5 rounded-full text-xs font-medium">
               <i className="fas fa-shield-alt"></i>
               管理者モード
             </div>
           )}
         </div>
 
-        {/* アップロードセクション */}
-        <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6 md:p-8 mb-8 sm:mb-12">
+        {/* アップロードセクション - コンパクト */}
+        <div className="bg-white rounded-lg shadow-lg p-3 sm:p-4 mb-6">
           
           {/* 成功メッセージ */}
           {successMessage && (
@@ -458,12 +469,12 @@ export const HomePage: React.FC = () => {
             error={error}
           />
           
-          {/* メタデータ入力フォーム */}
+          {/* メタデータ入力フォーム - コンパクト */}
           {showMetadataForm && selectedImage && (
-            <div className="mt-8 pt-8 border-t border-gray-200 space-y-6">
+            <div className="mt-4 pt-4 border-t border-gray-200">
               <div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-4">
-                  画像の詳細情報
+                <h3 className="text-sm font-semibold text-gray-800 mb-2">
+                  名前と一言を入力
                 </h3>
                 <MetadataForm
                   onSubmit={handleMetadataSubmit}
@@ -474,7 +485,7 @@ export const HomePage: React.FC = () => {
                 
                 {/* アップロード進捗 - アップロードボタンの直後 */}
                 {uploadProgress && selectedImage && isSubmitting && (
-                  <div className="mt-4">
+                  <div className="mt-3">
                     <UploadProgress
                       progress={uploadProgress}
                       fileName={selectedImage.name}
@@ -504,65 +515,51 @@ export const HomePage: React.FC = () => {
         {/* ギャラリーセクション */}
         <div id="gallery-section">
           {!galleryLoading && !galleryError && photos.length > 0 && (
-            <div className="bg-white rounded-lg shadow-sm border border-yellow-200 p-4 mb-6">
-              {/* 上段：思い出の件数 */}
-              <div className="flex items-center justify-center mb-4">
-                <div className="text-gray-700 font-medium text-base sm:text-lg">
-                  {photos.length}枚の思い出
+            <div className="bg-white rounded-lg shadow-sm border border-yellow-200 p-2 sm:p-3 mb-4">
+              {/* コンパクトなコントロール - 1行に */}
+              <div className="flex flex-wrap items-center justify-between gap-2 text-xs sm:text-sm">
+                {/* 左側：件数 */}
+                <div className="text-gray-700 font-medium">
+                  {photos.length}枚
                 </div>
-              </div>
-              
-              {/* 下段：コントロール */}
-              <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-                {/* 左側：表示件数選択 */}
-                <div className="flex items-center gap-3 bg-gray-50 px-4 py-2 rounded-lg">
-                  <i className="fas fa-list text-gray-500"></i>
-                  <span className="text-sm text-gray-600 font-medium">表示件数:</span>
+                
+                {/* 中央：表示件数 */}
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-600">表示:</span>
                   <select
                     value={itemsPerPage}
                     onChange={(e) => handleItemsPerPageChange(Number(e.target.value))}
-                    className="px-3 py-1 border border-gray-300 rounded-md text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="px-2 py-1 border border-gray-300 rounded text-xs bg-white"
                   >
-                    <option value={12}>12件</option>
-                    <option value={20}>20件</option>
-                    <option value={36}>36件</option>
-                    <option value={50}>50件</option>
+                    <option value={12}>12</option>
+                    <option value={20}>20</option>
+                    <option value={36}>36</option>
+                    <option value={50}>50</option>
                   </select>
-                </div>
-
-                {/* 中央：現在の表示範囲 */}
-                <div className="text-sm text-gray-500">
-                  {startIndex + 1}-{Math.min(endIndex, photos.length)}件を表示中
                 </div>
                 
                 {/* 右側：レイアウト切り替え */}
-                <div className="flex items-center gap-3 bg-gray-50 px-4 py-2 rounded-lg">
-                  <i className="fas fa-eye text-gray-500"></i>
-                  <span className="text-sm text-gray-600 font-medium">表示:</span>
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => setLayout('masonry')}
-                      className={`px-3 py-1 rounded-md text-xs font-medium transition-all flex items-center gap-1 ${
-                        layout === 'masonry'
-                          ? 'bg-yellow-600 text-white shadow-sm'
-                          : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
-                      }`}
-                    >
-                      <i className="fas fa-grip"></i>
-                      <span className="hidden sm:inline">マソンリー</span>
-                    </button>
-                    <button
-                      onClick={() => setLayout('grid')}
-                      className={`px-3 py-1 rounded-md text-xs font-medium transition-all flex items-center gap-1 ${
-                        layout === 'grid'
-                          ? 'bg-yellow-600 text-white shadow-sm'
-                          : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
-                      }`}
-                    >
-                      <i className="fas fa-square"></i>
-                      <span className="hidden sm:inline">グリッド</span>
-                    </button>
-                  </div>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setLayout('masonry')}
+                    className={`px-2 py-1 rounded text-xs font-medium transition-all ${
+                      layout === 'masonry'
+                        ? 'bg-yellow-600 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    <i className="fas fa-grip"></i>
+                  </button>
+                  <button
+                    onClick={() => setLayout('grid')}
+                    className={`px-2 py-1 rounded text-xs font-medium transition-all ${
+                      layout === 'grid'
+                        ? 'bg-yellow-600 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    <i className="fas fa-square"></i>
+                  </button>
                 </div>
               </div>
             </div>
