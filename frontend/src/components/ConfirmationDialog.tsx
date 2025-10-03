@@ -150,31 +150,21 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
                       return (
                         <label
                           key={item.id}
-                          className={`flex items-start gap-2 text-xs cursor-pointer hover:bg-gray-100 p-1 rounded transition-colors ${
-                            isChecked ? 'bg-green-50' : ''
-                          }`}
+                          className="flex items-start gap-3 text-xs cursor-pointer p-2"
                         >
-                          <div className="relative flex-shrink-0 mt-0.5">
-                            <input
-                              type="checkbox"
-                              checked={isChecked}
-                              onChange={(e) => handleCheckboxChange(item.id, e.target.checked)}
-                              className="sr-only"
-                            />
-                            <div 
-                              className={`w-4 h-4 rounded border cursor-pointer transition-all duration-200 flex items-center justify-center ${
-                                isChecked 
-                                  ? 'bg-blue-600 border-blue-600' 
-                                  : 'bg-white border-gray-400 hover:border-blue-400'
-                              }`}
-                              onClick={() => handleCheckboxChange(item.id, !isChecked)}
-                            >
-                              {isChecked && (
-                                <i className="fas fa-check text-white text-xs"></i>
-                              )}
-                            </div>
-                          </div>
-                          <span className={`flex-1 leading-tight ${isChecked ? 'text-green-800 font-medium' : 'text-gray-700'}`}>
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={(e) => handleCheckboxChange(item.id, e.target.checked)}
+                            className="mt-0.5 cursor-pointer"
+                            style={{
+                              width: '18px',
+                              height: '18px',
+                              accentColor: '#2563eb',
+                              flexShrink: 0
+                            }}
+                          />
+                          <span className="flex-1 leading-tight select-none text-gray-700">
                             {item.text}
                             {item.required && (
                               <span className="text-red-500 ml-1">*</span>

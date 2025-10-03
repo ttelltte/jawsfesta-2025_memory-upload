@@ -132,6 +132,9 @@ export const HomePage: React.FC = () => {
   const [showAdminEdit, setShowAdminEdit] = useState(false)
   const [editingPhoto, setEditingPhoto] = useState<Photo | null>(null)
 
+  // フローティングボタン関連のstate
+  const [showFloatingButton, setShowFloatingButton] = useState(false)
+
   // アップロード関連の処理
   const handleImageSelect = (file: File | null) => {
     if (!file) {
@@ -353,6 +356,17 @@ export const HomePage: React.FC = () => {
     loadPhotos()
   }, [])
 
+  // スクロール監視でフローティングボタンの表示/非表示を制御
+  useEffect(() => {
+    const handleScroll = () => {
+      // 300px以上スクロールしたらボタンを表示
+      setShowFloatingButton(window.scrollY > 300)
+    }
+
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
   // ESCキーでモーダルを閉じる
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -366,6 +380,12 @@ export const HomePage: React.FC = () => {
       document.removeEventListener('keydown', handleKeyDown)
     }
   }, [selectedPhoto])
+
+  // フローティングボタンのクリックハンドラー
+  const handleFloatingButtonClick = () => {
+    // アップロードセクションにスムーズスクロール
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
 
   return (
     <div className="min-h-screen relative" style={{
@@ -669,8 +689,9 @@ export const HomePage: React.FC = () => {
                   className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                     currentPage === 1
                       ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                      : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
+                      : 'bg-white text-gray-700 hover:bg-yellow-50 border border-yellow-400'
                   }`}
+                  style={currentPage !== 1 ? { borderColor: '#FFD700' } : {}}
                 >
                   <i className="fas fa-chevron-left mr-1"></i>
                   前へ
@@ -697,9 +718,10 @@ export const HomePage: React.FC = () => {
                         onClick={() => handlePageChange(pageNum)}
                         className={`w-10 h-10 rounded-lg text-sm font-medium transition-colors ${
                           currentPage === pageNum
-                            ? 'bg-blue-500 text-white'
-                            : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
+                            ? 'text-white shadow-md'
+                            : 'bg-white text-gray-700 hover:bg-yellow-50 border border-yellow-400'
                         }`}
+                        style={currentPage === pageNum ? { backgroundColor: '#FFD700' } : { borderColor: '#FFD700' }}
                       >
                         {pageNum}
                       </button>
@@ -714,8 +736,9 @@ export const HomePage: React.FC = () => {
                   className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                     currentPage === totalPages
                       ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                      : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
+                      : 'bg-white text-gray-700 hover:bg-yellow-50 border border-yellow-400'
                   }`}
+                  style={currentPage !== totalPages ? { borderColor: '#FFD700' } : {}}
                 >
                   次へ
                   <i className="fas fa-chevron-right ml-1"></i>
@@ -734,6 +757,20 @@ export const HomePage: React.FC = () => {
           onDelete={handleAdminDelete}
         />
 
+        {/* フローティングアップロードボタン */}
+        {showFloatingButton && (
+          <button
+            onClick={handleFloatingButtonClick}
+            className="fixed bottom-6 right-6 w-14 h-14 rounded-full shadow-2xl transition-all duration-300 hover:scale-110 z-40 flex items-center justify-center"
+            style={{ backgroundColor: '#FFD700' }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#FFC700'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#FFD700'}
+            aria-label="アップロードエリアに戻る"
+          >
+            <i className="fas fa-camera text-xl text-black"></i>
+          </button>
+        )}
+
         {/* 画像詳細モーダル - 画像最大表示 */}
         {selectedPhoto && (
           <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50" onClick={handleCloseDetail}>
@@ -746,7 +783,10 @@ export const HomePage: React.FC = () => {
                 </div>
                 <button
                   onClick={handleCloseDetail}
-                  className="text-white hover:text-gray-300 text-2xl sm:text-3xl leading-none p-2 hover:bg-white hover:bg-opacity-20 rounded-full transition-all"
+                  className="text-2xl sm:text-3xl leading-none p-2 rounded-full transition-all shadow-md"
+                  style={{ backgroundColor: '#FFD700', color: '#000' }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#FFC700'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#FFD700'}
                 >
                   <i className="fas fa-times"></i>
                 </button>
@@ -803,7 +843,10 @@ export const HomePage: React.FC = () => {
                   <div className="sm:col-span-1">
                     <button
                       onClick={handleCloseDetail}
-                      className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                      className="w-full px-4 py-2 rounded-lg transition-colors text-sm font-medium shadow-md"
+                      style={{ backgroundColor: '#FFD700', color: '#000' }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#FFC700'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#FFD700'}
                     >
                       <i className="fas fa-times mr-2"></i>
                       閉じる

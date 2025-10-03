@@ -132,7 +132,7 @@ export const ChecklistForm: React.FC<ChecklistFormProps> = ({
         </div>
       )}
 
-      {/* 確認項目チェックリスト - コンパクト、左揃え */}
+      {/* 確認項目チェックリスト - コンパクト、左揃え、クリック可能エリア拡張 */}
       <div className="space-y-2">
         {checklistItems.map((item) => {
           const isChecked = checkedItems[item.id] || false
@@ -142,10 +142,10 @@ export const ChecklistForm: React.FC<ChecklistFormProps> = ({
             <label
               key={item.id}
               className={`
-                flex items-start gap-2 p-2 rounded border transition-colors text-sm
+                flex items-start gap-3 p-3 rounded border transition-colors text-sm
                 ${disabled 
                   ? 'cursor-not-allowed opacity-60' 
-                  : 'cursor-pointer hover:bg-gray-50'
+                  : 'cursor-pointer hover:bg-gray-50 active:bg-gray-100'
                 }
                 ${isChecked 
                   ? 'bg-green-50 border-green-200' 
@@ -161,7 +161,7 @@ export const ChecklistForm: React.FC<ChecklistFormProps> = ({
                 disabled={disabled}
                 onChange={(e) => handleCheckboxChange(item.id, e.target.checked)}
                 className={`
-                  mt-0.5 w-4 h-4 rounded focus:ring-1 focus:ring-offset-0
+                  mt-0.5 w-5 h-5 rounded focus:ring-2 focus:ring-offset-0 flex-shrink-0
                   ${isChecked 
                     ? 'text-green-600 border-green-300 focus:ring-green-500' 
                     : hasValidationError 
@@ -171,7 +171,7 @@ export const ChecklistForm: React.FC<ChecklistFormProps> = ({
                 `}
               />
               <span className={`
-                flex-1 leading-snug
+                flex-1 leading-relaxed select-none
                 ${isChecked 
                   ? 'text-green-800 font-medium' 
                   : hasValidationError 

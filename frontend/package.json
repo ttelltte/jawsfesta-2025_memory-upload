@@ -19,7 +19,6 @@
     "react-router-dom": "^6.28.0"
   },
   "devDependencies": {
-    "rollup": "^4.52.3",
     "@types/react": "^18.2.79",
     "@types/react-dom": "^18.3.7",
     "@types/react-router-dom": "^5.3.3",
@@ -32,6 +31,7 @@
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.20",
     "postcss": "^8.4.47",
+    "rollup": "^4.52.3",
     "tailwindcss": "^3.4.15",
     "typescript": "^5.2.2",
     "vite": "^5.4.10"

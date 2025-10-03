@@ -13,7 +13,6 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
   selectedImage,
   error
 }) => {
-  const [isDragOver, setIsDragOver] = useState(false)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [imageRotation, setImageRotation] = useState(0)
 
@@ -69,29 +68,6 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
       handleFileSelect(file)
     }
     resetFileInputState()
-  }
-
-
-
-  // ドラッグ&ドロップ処理
-  const handleDragOver = (event: React.DragEvent) => {
-    event.preventDefault()
-    setIsDragOver(true)
-  }
-
-  const handleDragLeave = (event: React.DragEvent) => {
-    event.preventDefault()
-    setIsDragOver(false)
-  }
-
-  const handleDrop = (event: React.DragEvent) => {
-    event.preventDefault()
-    setIsDragOver(false)
-
-    const files = event.dataTransfer.files
-    if (files.length > 0) {
-      handleFileSelect(files[0])
-    }
   }
 
   // ファイル選択ボタンクリック
@@ -277,54 +253,22 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
 
       {/* ファイル選択エリア */}
       {!selectedImage && (
-        <div
-          className={`
-            border-2 border-dashed rounded-lg p-8 text-center transition-colors
-            ${isDragOver
-              ? 'border-blue-400 bg-blue-50'
-              : 'border-gray-300 hover:border-gray-400'
-            }
-          `}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
-        >
+        <div className="text-center">
           <div className="space-y-4">
-            {/* アイコン */}
-            <div className="mx-auto text-gray-400">
-              <i className="fas fa-cloud-upload-alt text-5xl sm:text-6xl"></i>
-            </div>
-
-            {/* メッセージ */}
-            <div>
-              <p className="text-lg font-medium text-gray-700 mb-2">
-                画像をアップロード
-              </p>
-              <p className="text-sm text-gray-500 mb-4">
-                {isMobile 
-                  ? 'ボタンから撮影または画像を選択してください'
-                  : 'ファイルをドラッグ&ドロップするか、下のボタンから選択してください'
-                }
-              </p>
-            </div>
-
             {/* ボタン群 */}
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <button
                 onClick={handleFileButtonClick}
-                className={`${isMobile
-                  ? 'w-full px-6 py-3 text-lg'
-                  : 'px-6 py-2'
-                  } bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors font-medium flex items-center justify-center gap-2`}
+                className="px-6 py-3 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors font-medium flex items-center justify-center gap-2"
                 data-testid="upload-button"
               >
-                <i className={`fas ${isMobile ? 'fa-camera' : 'fa-cloud-upload-alt'}`}></i>
-                {isMobile ? '撮影・画像選択' : '画像をアップロード'}
+                <i className={`fas ${isMobile ? 'fa-camera' : 'fa-image'}`}></i>
+                {isMobile ? '撮影・画像選択' : '画像を選択'}
               </button>
             </div>
 
             {/* ファイル制限の簡潔な説明 */}
-            <div className="text-xs text-gray-400 mt-4">
+            <div className="text-xs text-gray-400">
               <p>最大ファイルサイズ: 10MB</p>
             </div>
           </div>

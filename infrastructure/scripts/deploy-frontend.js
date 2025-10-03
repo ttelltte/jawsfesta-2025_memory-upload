@@ -24,6 +24,7 @@ const shouldBuild = process.argv.includes('--build');
 
 console.log('🚀 フロントエンドデプロイスクリプト');
 console.log(`環境: ${environment}`);
+console.log('');
 
 // 環境設定ファイルを読み込み
 const configPath = path.join(__dirname, '..', '..', 'config', `${environment}.json`);
@@ -35,6 +36,96 @@ try {
   console.error(`❌ 設定ファイルが見つかりません: ${configPath}`);
   console.error('利用可能な環境: dev, prod');
   process.exit(1);
+}
+
+/**
+ * AWS認証情報とアカウントIDを確認
+ */
+function verifyAwsAccount() {
+  console.log('🔐 AWS認証情報を確認中...');
+  
+  try {
+    // 現在のAWS認証情報を取得
+    const identity = execSync('aws sts get-caller-identity', { encoding: 'utf8' });
+    const currentAccount = JSON.parse(identity);
+    
+    console.log(`   現在のアカウント: ${currentAccount.Account}`);
+    console.log(`   ユーザー: ${currentAccount.Arn}`);
+    console.log('');
+    
+    // config.jsonのアカウントIDと比較
+    const expectedAccount = config.account;
+    console.log(`   期待されるアカウント: ${expectedAccount}`);
+    console.log('');
+    
+    if (currentAccount.Account !== expectedAccount) {
+      console.error('❌ アカウントIDが一致しません！');
+      console.error('');
+      console.error('正しいプロファイルを設定してください:');
+      console.error(`   $env:AWS_PROFILE = "terai-private-env@${expectedAccount}"`);
+      console.error('');
+      console.error('または、config/${environment}.jsonのアカウントIDを修正してください。');
+      process.exit(1);
+    }
+    
+    console.log('✅ アカウントIDが一致しました');
+    console.log('');
+    
+    return currentAccount;
+    
+  } catch (error) {
+    console.error('❌ AWS認証情報の取得に失敗しました');
+    console.error('AWS CLIが正しく設定されているか確認してください。');
+    console.error('');
+    console.error('プロファイルを設定:');
+    console.error(`   $env:AWS_PROFILE = "terai-private-env@${config.account}"`);
+    process.exit(1);
+  }
+}
+
+/**
+ * ユーザーに確認を求める
+ */
+function confirmDeployment(accountInfo) {
+  const readline = require('readline');
+  
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('📋 デプロイ情報の確認');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log(`   環境: ${environment}`);
+  console.log(`   AWSアカウント: ${accountInfo.Account}`);
+  console.log(`   リージョン: ${config.region}`);
+  console.log(`   スタック名: ${config.stackName}`);
+  if (shouldBuild) {
+    console.log(`   ビルド: 実行する`);
+  }
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('');
+  
+  return new Promise((resolve) => {
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout
+    });
+    
+    rl.question('このアカウントでデプロイしますか？ (Enter=OK / n=キャンセル): ', (answer) => {
+      rl.close();
+      
+      if (answer.toLowerCase() === 'n') {
+        console.log('');
+        console.log('❌ デプロイをキャンセルしました。');
+        console.log('');
+        console.log('💡 正しいプロファイルを設定してください:');
+        console.log('   $env:AWS_PROFILE = "your-profile-name"');
+        process.exit(0);
+      }
+      
+      console.log('');
+      console.log('✅ デプロイを開始します...');
+      console.log('');
+      resolve();
+    });
+  });
 }
 
 // AWS クライアントを初期化
@@ -430,6 +521,12 @@ function showDeploymentInfo(bucketName) {
  */
 async function main() {
   try {
+    // AWS認証情報とアカウントIDを確認
+    const accountInfo = verifyAwsAccount();
+    
+    // ユーザーに確認を求める（非同期）
+    await confirmDeployment(accountInfo);
+    
     // S3バケット名を取得
     const bucketName = getBucketName(environment);
     
