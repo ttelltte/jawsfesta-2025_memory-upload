@@ -41,6 +41,17 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
     }
   }, [previewUrl])
 
+  // 外部からファイルが選択された場合のプレビュー更新
+  useEffect(() => {
+    if (selectedImage && !previewUrl) {
+      const url = URL.createObjectURL(selectedImage)
+      setPreviewUrl(url)
+    } else if (!selectedImage && previewUrl) {
+      URL.revokeObjectURL(previewUrl)
+      setPreviewUrl(null)
+    }
+  }, [selectedImage, previewUrl])
+
   // ファイル選択処理
   const handleFileSelect = useCallback((file: File) => {
     // ファイルバリデーション
@@ -171,27 +182,27 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
       {/* エラーメッセージ */}
       {error && <ErrorMessage message={error} type="error" />}
 
-      {/* プレビュー表示 */}
+      {/* プレビュー表示 - コンパクト */}
       {previewUrl && selectedImage && (
-        <div className="relative bg-white rounded-lg shadow-md p-4" data-testid="image-preview">
+        <div className="relative bg-white rounded-lg shadow-md p-3" data-testid="image-preview">
           <div className="flex justify-between items-start mb-2">
-            <h3 className="text-lg font-medium text-gray-800">選択された画像</h3>
+            <h3 className="text-sm font-medium text-gray-800">選択された画像</h3>
             <button
               onClick={handleRemovePreview}
-              className="text-red-500 hover:text-red-700 text-sm font-medium"
+              className="text-red-500 hover:text-red-700 text-xs font-medium"
             >
               削除
             </button>
           </div>
-          <div className="flex flex-col gap-4">
-            {/* 画像プレビューエリア */}
+          <div className="flex flex-col gap-3">
+            {/* 画像プレビューエリア - コンパクト */}
             <div className="flex justify-center">
               <div className="relative">
                 <div 
-                  className="overflow-hidden rounded-lg border bg-gray-50 flex items-center justify-center"
+                  className="overflow-hidden rounded border bg-gray-50 flex items-center justify-center"
                   style={{
-                    width: '300px',
-                    height: '300px'
+                    width: '200px',
+                    height: '200px'
                   }}
                 >
                   <img
@@ -207,11 +218,11 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
               </div>
             </div>
 
-            {/* 回転コントロール */}
-            <div className="flex gap-2 justify-center">
+            {/* 回転コントロール - コンパクト */}
+            <div className="flex gap-1 justify-center">
               <button
                 onClick={handleImageRotate}
-                className="px-4 py-2 bg-yellow-600 text-white rounded-lg text-sm hover:bg-yellow-700 transition-colors flex items-center gap-2"
+                className="px-2 py-1 bg-yellow-600 text-white rounded text-xs hover:bg-yellow-700 transition-colors flex items-center gap-1"
               >
                 <i className="fas fa-redo"></i>
                 回転
@@ -220,14 +231,14 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
                 <>
                   <button
                     onClick={handleImageReset}
-                    className="px-4 py-2 bg-gray-500 text-white rounded-lg text-sm hover:bg-gray-600 transition-colors flex items-center gap-2"
+                    className="px-2 py-1 bg-gray-500 text-white rounded text-xs hover:bg-gray-600 transition-colors flex items-center gap-1"
                   >
                     <i className="fas fa-undo"></i>
                     リセット
                   </button>
                   <button
                     onClick={handleApplyRotation}
-                    className="px-4 py-2 bg-yellow-600 text-white rounded-lg text-sm hover:bg-yellow-700 transition-colors flex items-center gap-2"
+                    className="px-2 py-1 bg-yellow-600 text-white rounded text-xs hover:bg-yellow-700 transition-colors flex items-center gap-1"
                   >
                     <i className="fas fa-check"></i>
                     適用
@@ -236,12 +247,11 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
               )}
             </div>
 
-            {/* ファイル情報 */}
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-gray-600">
-                <p><span className="font-medium">ファイル名:</span> {selectedImage.name}</p>
+            {/* ファイル情報 - コンパクト */}
+            <div className="bg-gray-50 p-2 rounded text-xs text-gray-600">
+              <div className="space-y-1">
+                <p><span className="font-medium">ファイル:</span> {selectedImage.name.length > 20 ? `${selectedImage.name.substring(0, 20)}...` : selectedImage.name}</p>
                 <p><span className="font-medium">サイズ:</span> {formatFileSize(selectedImage.size)}</p>
-                <p><span className="font-medium">形式:</span> {getFileTypeDescription(selectedImage.type)}</p>
                 {imageRotation !== 0 && (
                   <p><span className="font-medium text-blue-600">回転:</span> <span className="text-blue-600 font-medium">{imageRotation}度</span></p>
                 )}

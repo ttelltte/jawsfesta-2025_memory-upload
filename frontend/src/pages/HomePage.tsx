@@ -356,27 +356,11 @@ export const HomePage: React.FC = () => {
     loadPhotos()
   }, [])
 
-  // スクロール監視でフローティングボタンの表示/非表示を制御
+  // フローティングボタンの表示制御
   useEffect(() => {
-    const handleScroll = () => {
-      // ギャラリーセクションの位置を取得
-      const gallerySection = document.getElementById('gallery-section')
-      if (!gallerySection) {
-        setShowFloatingButton(false)
-        return
-      }
-      
-      const gallerySectionTop = gallerySection.offsetTop
-      const currentScroll = window.scrollY
-      
-      // ギャラリーセクションに到達したらボタンを表示
-      setShowFloatingButton(currentScroll >= gallerySectionTop - 100)
-    }
-
-    window.addEventListener('scroll', handleScroll)
-    handleScroll() // 初回実行
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [photos])
+    // アップロード画面（メタデータフォーム）が表示されていない場合のみ表示
+    setShowFloatingButton(!showMetadataForm)
+  }, [showMetadataForm])
 
   // ESCキーでモーダルを閉じる
   useEffect(() => {
@@ -394,8 +378,20 @@ export const HomePage: React.FC = () => {
 
   // フローティングボタンのクリックハンドラー
   const handleFloatingButtonClick = () => {
-    // アップロードセクションにスムーズスクロール
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+    // カメラ撮影モードで直接開く
+    const cameraInput = document.createElement('input')
+    cameraInput.type = 'file'
+    cameraInput.accept = 'image/*'
+    cameraInput.capture = 'environment' // 背面カメラを優先
+    cameraInput.onchange = (event) => {
+      const file = (event.target as HTMLInputElement).files?.[0]
+      if (file) {
+        handleImageSelect(file)
+        // アップロードセクションにスクロール
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+      }
+    }
+    cameraInput.click()
   }
 
   return (
