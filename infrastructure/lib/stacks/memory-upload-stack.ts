@@ -7,6 +7,8 @@ import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as acm from 'aws-cdk-lib/aws-certificatemanager';
+import * as sns from 'aws-cdk-lib/aws-sns';
+import * as subscriptions from 'aws-cdk-lib/aws-sns-subscriptions';
 
 import { Construct } from 'constructs';
 import * as path from 'path';
@@ -28,6 +30,8 @@ export class MemoryUploadStack extends cdk.Stack {
   public readonly configFunction: lambda.Function;
   public readonly adminDeleteFunction: lambda.Function;
   public readonly adminUpdateFunction: lambda.Function;
+  public readonly deleteRequestFunction: lambda.Function;
+  public readonly deleteRequestTopic: sns.Topic;
 
   constructor(scope: Construct, id: string, props: MemoryUploadStackProps) {
     super(scope, id, props);
@@ -177,6 +181,21 @@ export class MemoryUploadStack extends cdk.Stack {
         pointInTimeRecoveryEnabled: environment === 'prod',
       },
     });
+
+    // ===========================================
+    // SNS Topic - 削除リクエスト通知用
+    // ===========================================
+    this.deleteRequestTopic = new sns.Topic(this, 'DeleteRequestTopic', {
+      displayName: `JAWS FESTA Memory Upload - Delete Request Notifications (${environment})`,
+      topicName: config.sns?.topicName || undefined,
+    });
+
+    // Email Subscription - 削除リクエスト通知先
+    if (config.sns?.deleteRequestEmail) {
+      this.deleteRequestTopic.addSubscription(
+        new subscriptions.EmailSubscription(config.sns.deleteRequestEmail)
+      );
+    }
 
     // ===========================================
     // Lambda Functions
@@ -348,6 +367,44 @@ export class MemoryUploadStack extends cdk.Stack {
       description: `Lambda function for admin photo update (${environment})`,
     });
 
+    // Delete Request Lambda 関数
+    this.deleteRequestFunction = new lambda.Function(this, 'DeleteRequestFunction', {
+      runtime: lambda.Runtime.NODEJS_18_X,
+      handler: 'index.handler',
+      code: lambda.Code.fromAsset(path.join(__dirname, '../../lambda/delete-request')),
+      timeout: cdk.Duration.seconds(30),
+      memorySize: 256,
+      environment: {
+        // DynamoDB テーブル名
+        PHOTOS_TABLE_NAME: this.photosTable.tableName,
+
+        // S3 バケット名
+        PHOTOS_BUCKET_NAME: this.photosBucket.bucketName,
+
+        // SNS トピック ARN
+        DELETE_REQUEST_TOPIC_ARN: this.deleteRequestTopic.topicArn,
+
+        // CloudFront ドメイン（カスタムドメインまたは空文字列）
+        CLOUDFRONT_DOMAIN: config.cloudfront?.customDomain?.enabled && config.cloudfront?.customDomain?.domainName
+          ? config.cloudfront.customDomain.domainName
+          : '',
+
+        // 環境設定
+        ENVIRONMENT: environment,
+        REGION: this.region,
+
+        // ログレベル
+        LOG_LEVEL: config.logging?.level || (environment === 'prod' ? 'WARN' : 'DEBUG'),
+
+        // CORS設定
+        CORS_ALLOWED_ORIGINS: JSON.stringify(
+          config.apiGateway?.corsAllowedOrigins ||
+          (environment === 'prod' ? ['https://your-domain.com'] : ['*'])
+        ),
+      },
+      description: `Lambda function for handling delete requests (${environment})`,
+    });
+
     // ===========================================
     // IAM 権限設定（最小権限の原則）
     // ===========================================
@@ -419,6 +476,13 @@ export class MemoryUploadStack extends cdk.Stack {
     // DynamoDB: Photos テーブルの読み取り・更新権限
     this.photosTable.grantReadWriteData(this.adminUpdateFunction);
 
+    // Delete Request Lambda の権限
+    // DynamoDB: Photos テーブルからの読み取り権限
+    this.photosTable.grantReadData(this.deleteRequestFunction);
+
+    // SNS: トピックへのPublish権限
+    this.deleteRequestTopic.grantPublish(this.deleteRequestFunction);
+
     // 追加のIAMポリシー: Config Lambda用（特定のアイテムのみ読み取り）
     this.configFunction.addToRolePolicy(new iam.PolicyStatement({
       effect: iam.Effect.ALLOW,
@@ -454,6 +518,7 @@ export class MemoryUploadStack extends cdk.Stack {
     this.configFunction.addToRolePolicy(cloudWatchLogsPolicy);
     this.adminDeleteFunction.addToRolePolicy(cloudWatchLogsPolicy);
     this.adminUpdateFunction.addToRolePolicy(cloudWatchLogsPolicy);
+    this.deleteRequestFunction.addToRolePolicy(cloudWatchLogsPolicy);
 
     // ===========================================
     // API Gateway
@@ -539,6 +604,13 @@ export class MemoryUploadStack extends cdk.Stack {
     // /api/config エンドポイント - 確認項目設定取得用
     const configResource = apiResource.addResource('config');
     configResource.addMethod('GET', new apigateway.LambdaIntegration(this.configFunction, {
+      // プロキシ統合を使用してシンプルに設定
+      proxy: true,
+    }));
+
+    // /api/delete-request エンドポイント - 削除リクエスト送信用
+    const deleteRequestResource = apiResource.addResource('delete-request');
+    deleteRequestResource.addMethod('POST', new apigateway.LambdaIntegration(this.deleteRequestFunction, {
       // プロキシ統合を使用してシンプルに設定
       proxy: true,
     }));
@@ -807,6 +879,18 @@ export class MemoryUploadStack extends cdk.Stack {
       value: this.adminUpdateFunction.functionName,
       description: 'Admin Update Lambda Function Name',
       exportName: `${this.stackName}-AdminUpdateFunctionName`,
+    });
+
+    new cdk.CfnOutput(this, 'DeleteRequestFunctionName', {
+      value: this.deleteRequestFunction.functionName,
+      description: 'Delete Request Lambda Function Name',
+      exportName: `${this.stackName}-DeleteRequestFunctionName`,
+    });
+
+    new cdk.CfnOutput(this, 'DeleteRequestTopicArn', {
+      value: this.deleteRequestTopic.topicArn,
+      description: 'SNS Topic ARN for Delete Requests',
+      exportName: `${this.stackName}-DeleteRequestTopicArn`,
     });
   }
 

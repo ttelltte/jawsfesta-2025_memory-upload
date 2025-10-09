@@ -38,6 +38,8 @@ aws sts get-caller-identity
 
 # 正しいプロファイルに切り替え（必要に応じて）
 $env:AWS_PROFILE = "your-profile-name"
+
+$env:AWS_PROFILE = "terai-private-env@375057248858"
 ```
 
 ## 🚀 デプロイ手順

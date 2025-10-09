@@ -76,6 +76,9 @@
   "logging": {
     "level": "DEBUG"
   },
+  "sns": {
+    "deleteRequestEmail": "x-aaaajtvykylib63sfgaojnteyi@denet.slack.com"
+  },
   "tags": {
     "Project": "JawsFestaMemoryUpload",
     "Environment": "dev",

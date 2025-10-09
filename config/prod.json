@@ -59,6 +59,9 @@
   "logging": {
     "level": "WARN"
   },
+  "sns": {
+    "deleteRequestEmail": "your-email@example.com"
+  },
   "tags": {
     "Project": "JawsFestaMemoryUpload",
     "Environment": "prod",

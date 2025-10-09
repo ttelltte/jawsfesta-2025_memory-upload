@@ -1,0 +1,21 @@
+{
+  "name": "memory-upload-lambda-delete-request",
+  "version": "1.0.0",
+  "description": "Lambda function for handling delete requests in JAWS FESTA Memory Upload application",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "aws-sdk": "^2.1691.0"
+  },
+  "keywords": [
+    "aws",
+    "lambda",
+    "delete-request",
+    "sns",
+    "jaws-festa"
+  ],
+  "author": "",
+  "license": "MIT"
+}

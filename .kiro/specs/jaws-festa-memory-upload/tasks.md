@@ -24,18 +24,28 @@
   - クリアボタンの実装
   - _Requirements: 7.2, 7.3, 7.4_
 
-- [ ] 17. 削除リクエスト機能の実装（バックエンド）
-- [ ] 17.1 SNSトピックとSubscriptionの作成
+- [x] 17. 削除リクエスト機能の実装（バックエンド）
+
+
+
+
+- [x] 17.1 SNSトピックとSubscriptionの作成
+
+
   - CDK StackにSNSトピックを追加
   - Email Subscriptionの設定
   - 環境変数でのメールアドレス管理
   - _Requirements: 8.4, 8.5_
+
+
 
 - [ ] 17.2 Delete Request Lambda関数の実装
   - deleteRequest.js Lambda関数の作成
   - リクエストバリデーション（画像ID、削除理由）
   - DynamoDBから画像メタデータ取得
   - SNS通知送信（件名にphotoId含む）
+
+
   - エラーハンドリング
   - _Requirements: 8.3, 8.4, 8.5, 8.7, 8.8_
 
