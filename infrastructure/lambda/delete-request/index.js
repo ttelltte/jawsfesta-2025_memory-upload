@@ -109,6 +109,8 @@ exports.handler = async (event) => {
     const snsTopicArn = process.env.DELETE_REQUEST_TOPIC_ARN;
     const photosBucketName = process.env.PHOTOS_BUCKET_NAME;
     const cloudfrontDomain = process.env.CLOUDFRONT_DOMAIN;
+    const adminPassword = process.env.ADMIN_PASSWORD;
+    const websiteUrl = process.env.WEBSITE_URL;
     
     if (!photosTableName) {
       throw new Error('PHOTOS_TABLE_NAME environment variable is not set');
@@ -148,6 +150,9 @@ exports.handler = async (event) => {
     const photoMetadata = result.Item;
     console.log('Photo metadata retrieved:', JSON.stringify(photoMetadata, null, 2));
     
+    // リクエスト時刻を生成
+    const requestTime = new Date().toISOString();
+    
     // 画像URLの生成
     let imageUrl = '';
     if (cloudfrontDomain && photoMetadata.s3Key) {
@@ -156,26 +161,82 @@ exports.handler = async (event) => {
       imageUrl = `https://${photosBucketName}.s3.${process.env.AWS_REGION || 'ap-northeast-1'}.amazonaws.com/${photoMetadata.s3Key}`;
     }
     
-    // SNS通知メッセージの作成
-    const requestTime = new Date().toISOString();
-    const message = {
-      requestTime,
-      photoId,
-      uploaderName: photoMetadata.uploaderName || 'Anonymous',
-      deleteReason: deleteReason || '理由なし',
-      s3Key: photoMetadata.s3Key,
-      imageUrl,
-      uploadTime: photoMetadata.uploadTime,
-      comment: photoMetadata.comment || ''
-    };
+    // 管理者画面URLの生成
+    let adminUrl = '';
+    if (websiteUrl && adminPassword) {
+      const params = new URLSearchParams({
+        admin: adminPassword,
+        photoId: photoId,
+        deleteReason: deleteReason || '理由なし',
+        requestTime: requestTime
+      });
+      adminUrl = `${websiteUrl}?${params.toString()}`;
+    } else if (cloudfrontDomain && adminPassword) {
+      const params = new URLSearchParams({
+        admin: adminPassword,
+        photoId: photoId,
+        deleteReason: deleteReason || '理由なし',
+        requestTime: requestTime
+      });
+      adminUrl = `https://${cloudfrontDomain}?${params.toString()}`;
+    }
+    
+    // SNS通知メッセージの作成（人間が読みやすい形式）
+    const requestTimeJST = new Date(requestTime).toLocaleString('ja-JP', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      timeZone: 'Asia/Tokyo'
+    });
+    
+    const uploadTimeJST = new Date(photoMetadata.uploadTime).toLocaleString('ja-JP', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: 'Asia/Tokyo'
+    });
+    
+    const messageText = `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+画像削除リクエスト
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+【管理者操作URL】
+${adminUrl}
+
+※上記URLをクリックすると、管理者画面で該当画像の編集ダイアログが自動で開きます
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+【削除理由】
+${deleteReason || '理由なし'}
+
+【投稿者】
+${photoMetadata.uploaderName || '匿名'}
+
+【リクエスト日時】
+${requestTimeJST}
+
+【画像情報】
+- アップロード日時: ${uploadTimeJST}
+- コメント: ${photoMetadata.comment || 'なし'}
+- 画像URL: ${imageUrl}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+`;
     
     // SNS通知の送信
     console.log('Sending SNS notification to:', snsTopicArn);
     
     const publishCommand = new PublishCommand({
       TopicArn: snsTopicArn,
-      Subject: `[JAWS FESTA] 画像削除リクエスト - ${photoId}`,
-      Message: JSON.stringify(message, null, 2)
+      Subject: `[JAWS FESTA] 画像削除リクエスト - ${photoMetadata.uploaderName || '匿名'}`,
+      Message: messageText
     });
     
     await snsClient.send(publishCommand);

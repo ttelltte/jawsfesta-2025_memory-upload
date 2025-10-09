@@ -6,6 +6,7 @@ interface DeleteRequestDialogProps {
   onCancel: () => void
   photoId: string
   uploaderName?: string
+  imageUrl?: string
 }
 
 export const DeleteRequestDialog: React.FC<DeleteRequestDialogProps> = ({
@@ -13,7 +14,8 @@ export const DeleteRequestDialog: React.FC<DeleteRequestDialogProps> = ({
   onConfirm,
   onCancel,
   photoId,
-  uploaderName
+  uploaderName,
+  imageUrl
 }) => {
   const [deleteReason, setDeleteReason] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -58,17 +60,24 @@ export const DeleteRequestDialog: React.FC<DeleteRequestDialogProps> = ({
               </p>
             </div>
 
-            {/* 画像情報 */}
-            <div className="bg-gray-50 p-3 rounded">
-              <p className="text-xs text-gray-600">
-                <span className="font-medium">画像ID:</span> {photoId}
-              </p>
-              {uploaderName && (
-                <p className="text-xs text-gray-600 mt-1">
-                  <span className="font-medium">投稿者:</span> {uploaderName}
-                </p>
-              )}
-            </div>
+            {/* 画像プレビュー */}
+            {imageUrl && (
+              <div className="bg-gray-50 p-3 rounded">
+                <p className="text-xs font-medium text-gray-700 mb-2">削除対象の画像</p>
+                <div className="w-full h-48 bg-gray-100 rounded overflow-hidden flex items-center justify-center">
+                  <img
+                    src={imageUrl}
+                    alt="削除対象の画像"
+                    className="max-w-full max-h-full object-contain"
+                  />
+                </div>
+                {uploaderName && uploaderName !== 'Anonymous' && uploaderName !== '匿名' && (
+                  <p className="text-xs text-gray-600 mt-2">
+                    <span className="font-medium">投稿者:</span> {uploaderName}
+                  </p>
+                )}
+              </div>
+            )}
 
             {/* 削除理由入力 */}
             <div>

@@ -18,6 +18,7 @@ export const AdminEditDialog: React.FC<AdminEditDialogProps> = ({
 }) => {
   const [uploaderName, setUploaderName] = useState('')
   const [comment, setComment] = useState('')
+  const [deleteRequest, setDeleteRequest] = useState<{ deleteReason: string; requestTime: string } | null>(null)
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
@@ -26,6 +27,20 @@ export const AdminEditDialog: React.FC<AdminEditDialogProps> = ({
       setUploaderName(photo.uploaderName || '')
       setComment(photo.comment || '')
       setShowDeleteConfirm(false)
+      
+      // セッションストレージから削除依頼情報を取得
+      const deleteRequestData = sessionStorage.getItem('deleteRequest')
+      if (deleteRequestData) {
+        try {
+          setDeleteRequest(JSON.parse(deleteRequestData))
+          // 一度読み込んだら削除
+          sessionStorage.removeItem('deleteRequest')
+        } catch (e) {
+          console.error('Failed to parse delete request data:', e)
+        }
+      } else {
+        setDeleteRequest(null)
+      }
     }
   }, [photo, isOpen])
 
@@ -71,6 +86,37 @@ export const AdminEditDialog: React.FC<AdminEditDialogProps> = ({
               <i className="fas fa-times text-xl"></i>
             </button>
           </div>
+
+          {/* 削除依頼情報 */}
+          {deleteRequest && (
+            <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-4">
+              <div className="flex items-start gap-2">
+                <i className="fas fa-exclamation-triangle text-red-600 mt-1"></i>
+                <div className="flex-1">
+                  <h4 className="text-sm font-semibold text-red-900 mb-2">
+                    ユーザーから削除依頼があります
+                  </h4>
+                  <div className="space-y-1 text-sm text-red-800">
+                    <p>
+                      <span className="font-medium">依頼日時:</span>{' '}
+                      {new Date(deleteRequest.requestTime).toLocaleString('ja-JP', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        timeZone: 'Asia/Tokyo'
+                      })}
+                    </p>
+                    <p>
+                      <span className="font-medium">削除理由:</span>{' '}
+                      {deleteRequest.deleteReason}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* プレビュー画像 */}
           {photo.presignedUrl && (

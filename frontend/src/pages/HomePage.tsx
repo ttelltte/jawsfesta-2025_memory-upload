@@ -398,6 +398,46 @@ export const HomePage: React.FC = () => {
     loadPhotos()
   }, [])
 
+  // URLパラメータからphotoIdを取得して管理者編集ダイアログを開く
+  useEffect(() => {
+    if (photos.length === 0) return
+
+    const params = new URLSearchParams(window.location.search)
+    const photoId = params.get('photoId')
+    const deleteReason = params.get('deleteReason')
+    const requestTime = params.get('requestTime')
+
+    if (photoId && isAdmin) {
+      // 該当の画像を探す
+      const targetPhoto = photos.find(p => p.id === photoId)
+      
+      if (targetPhoto) {
+        // 少し遅延させてDOMが確実にレンダリングされるのを待つ
+        setTimeout(() => {
+          // 管理者編集ダイアログを開く
+          setEditingPhoto(targetPhoto)
+          setShowAdminEdit(true)
+          
+          // 削除依頼情報をセッションストレージに保存（ダイアログで表示するため）
+          if (deleteReason || requestTime) {
+            sessionStorage.setItem('deleteRequest', JSON.stringify({
+              deleteReason: deleteReason || '',
+              requestTime: requestTime || ''
+            }))
+          }
+          
+          // photoId, deleteReason, requestTimeパラメータを削除（adminパラメータは保持）
+          params.delete('photoId')
+          params.delete('deleteReason')
+          params.delete('requestTime')
+          const newSearch = params.toString()
+          const newUrl = window.location.pathname + (newSearch ? '?' + newSearch : '') + window.location.hash
+          window.history.replaceState({}, '', newUrl)
+        }, 500)
+      }
+    }
+  }, [photos, isAdmin])
+
   // フローティングボタンの表示制御
   useEffect(() => {
     // アップロード画面（メタデータフォーム）が表示されていない場合のみ表示
@@ -929,6 +969,7 @@ export const HomePage: React.FC = () => {
             onCancel={handleCancelDeleteRequest}
             photoId={deleteRequestPhoto.id}
             uploaderName={deleteRequestPhoto.uploaderName}
+            imageUrl={deleteRequestPhoto.presignedUrl}
           />
         )}
 

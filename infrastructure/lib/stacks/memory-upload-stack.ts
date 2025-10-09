@@ -389,6 +389,14 @@ export class MemoryUploadStack extends cdk.Stack {
           ? config.cloudfront.customDomain.domainName
           : '',
 
+        // 管理者パスワード
+        ADMIN_PASSWORD: config.admin?.password || '19931124',
+
+        // ウェブサイトURL
+        WEBSITE_URL: config.cloudfront?.customDomain?.enabled && config.cloudfront?.customDomain?.domainName
+          ? `https://${config.cloudfront.customDomain.domainName}`
+          : '',
+
         // 環境設定
         ENVIRONMENT: environment,
         REGION: this.region,
