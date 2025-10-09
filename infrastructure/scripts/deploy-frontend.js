@@ -243,7 +243,8 @@ async function buildFrontend() {
     execSync('npm install', { 
       cwd: FRONTEND_DIR, 
       stdio: 'inherit',
-      env 
+      env,
+      shell: 'powershell.exe'
     });
     
     // ビルド実行
@@ -251,7 +252,8 @@ async function buildFrontend() {
     execSync('npm run build', { 
       cwd: FRONTEND_DIR, 
       stdio: 'inherit',
-      env 
+      env,
+      shell: 'powershell.exe'
     });
     
     console.log('✅ フロントエンドのビルドが完了しました。');

@@ -39,7 +39,8 @@
 
 
 
-- [ ] 17.2 Delete Request Lambda関数の実装
+- [x] 17.2 Delete Request Lambda関数の実装
+
   - deleteRequest.js Lambda関数の作成
   - リクエストバリデーション（画像ID、削除理由）
   - DynamoDBから画像メタデータ取得
@@ -49,21 +50,30 @@
   - エラーハンドリング
   - _Requirements: 8.3, 8.4, 8.5, 8.7, 8.8_
 
-- [ ] 17.3 API Gatewayエンドポイントの追加
+
+- [x] 17.3 API Gatewayエンドポイントの追加
+
   - /api/delete-request エンドポイントの作成
   - Lambda関数との統合
   - CORS設定の適用
   - _Requirements: 8.3_
 
-- [ ] 18. 削除リクエスト機能の実装（フロントエンド）
-- [ ] 18.1 DeleteRequestDialogコンポーネントの作成
+- [x] 18. 削除リクエスト機能の実装（フロントエンド）
+
+
+
+
+- [x] 18.1 DeleteRequestDialogコンポーネントの作成
+
   - 削除理由入力フィールド（任意）
   - 確認ダイアログの実装
   - API呼び出し処理
   - 成功・エラーフィードバック表示
   - _Requirements: 8.2, 8.3, 8.6, 8.7, 8.8_
 
-- [ ] 18.2 画像詳細モーダルへの削除ボタン追加
+- [x] 18.2 画像詳細モーダルへの削除ボタン追加
+
+
   - HomePage.tsxの画像詳細モーダルに「削除リクエストを送る」ボタンを追加
   - 控えめなデザインで配置
   - DeleteRequestDialogとの連携

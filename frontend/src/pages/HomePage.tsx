@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { ImageUpload, MetadataForm, ConfirmationDialog, UploadProgress, ErrorMessage, type MetadataFormData, GallerySkeleton, AdminEditDialog } from '../components'
+import { DeleteRequestDialog } from '../components/DeleteRequestDialog'
 import { UploadSuccessMessage } from '../components/SuccessMessage'
 import { validateFile, normalizeError, logError } from '../utils'
 import { useAdmin } from '../hooks/useAdmin'
@@ -7,6 +8,7 @@ import { useAdmin } from '../hooks/useAdmin'
 import { uploadImage, canUpload, type UploadProgress as UploadProgressType } from '../api/upload'
 import { fetchPhotos, Photo } from '../api/photos'
 import { deletePhoto, updatePhoto } from '../api/admin'
+import { sendDeleteRequest } from '../api/deleteRequest'
 
 type LayoutType = 'masonry' | 'grid'
 
@@ -131,6 +133,11 @@ export const HomePage: React.FC = () => {
   const isAdmin = useAdmin()
   const [showAdminEdit, setShowAdminEdit] = useState(false)
   const [editingPhoto, setEditingPhoto] = useState<Photo | null>(null)
+
+  // 削除リクエスト関連のstate
+  const [showDeleteRequest, setShowDeleteRequest] = useState(false)
+  const [deleteRequestPhoto, setDeleteRequestPhoto] = useState<Photo | null>(null)
+  const [deleteRequestSuccess, setDeleteRequestSuccess] = useState(false)
 
   // フローティングボタン関連のstate
   const [showFloatingButton, setShowFloatingButton] = useState(false)
@@ -283,6 +290,41 @@ export const HomePage: React.FC = () => {
   const handleGalleryRetry = () => {
     setGalleryError(null)
     loadPhotos()
+  }
+
+  // 削除リクエスト関連の処理
+  const handleDeleteRequest = (photo: Photo) => {
+    setDeleteRequestPhoto(photo)
+    setShowDeleteRequest(true)
+    setDeleteRequestSuccess(false)
+  }
+
+  const handleConfirmDeleteRequest = async (deleteReason: string) => {
+    if (!deleteRequestPhoto) return
+
+    try {
+      const response = await sendDeleteRequest({
+        photoId: deleteRequestPhoto.id,
+        deleteReason: deleteReason || undefined
+      })
+
+      if (response.success) {
+        setDeleteRequestSuccess(true)
+        setTimeout(() => {
+          setShowDeleteRequest(false)
+          setDeleteRequestPhoto(null)
+          setDeleteRequestSuccess(false)
+        }, 2000)
+      }
+    } catch (error) {
+      throw error
+    }
+  }
+
+  const handleCancelDeleteRequest = () => {
+    setShowDeleteRequest(false)
+    setDeleteRequestPhoto(null)
+    setDeleteRequestSuccess(false)
   }
 
   // ページネーション関連の処理
@@ -833,10 +875,24 @@ export const HomePage: React.FC = () => {
                     </div>
                   </div>
                   
-                  <div className="sm:col-span-1">
+                  <div className="sm:col-span-1 flex gap-2">
+                    {/* 削除リクエストボタン - 控えめなデザイン */}
+                    {!isAdmin && (
+                      <button
+                        onClick={() => {
+                          handleDeleteRequest(selectedPhoto)
+                          handleCloseDetail()
+                        }}
+                        className="flex-1 px-3 py-2 rounded-lg transition-colors text-xs font-medium border border-gray-300 text-gray-600 hover:bg-gray-50"
+                        title="この画像の削除を管理者にリクエストします"
+                      >
+                        <i className="fas fa-flag mr-1"></i>
+                        削除依頼
+                      </button>
+                    )}
                     <button
                       onClick={handleCloseDetail}
-                      className="w-full px-4 py-2 rounded-lg transition-colors text-sm font-medium shadow-md"
+                      className={`px-4 py-2 rounded-lg transition-colors text-sm font-medium shadow-md ${!isAdmin ? 'flex-1' : 'w-full'}`}
                       style={{ backgroundColor: '#FFD700', color: '#000' }}
                       onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#FFC700'}
                       onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#FFD700'}
@@ -862,6 +918,25 @@ export const HomePage: React.FC = () => {
                 )}
               </div>
             </div>
+          </div>
+        )}
+
+        {/* 削除リクエストダイアログ */}
+        {showDeleteRequest && deleteRequestPhoto && (
+          <DeleteRequestDialog
+            isOpen={showDeleteRequest}
+            onConfirm={handleConfirmDeleteRequest}
+            onCancel={handleCancelDeleteRequest}
+            photoId={deleteRequestPhoto.id}
+            uploaderName={deleteRequestPhoto.uploaderName}
+          />
+        )}
+
+        {/* 削除リクエスト成功メッセージ */}
+        {deleteRequestSuccess && (
+          <div className="fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-fade-in">
+            <i className="fas fa-check-circle mr-2"></i>
+            削除リクエストを送信しました
           </div>
         )}
       </div>
