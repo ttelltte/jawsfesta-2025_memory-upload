@@ -18,8 +18,8 @@
       "required": true
     },
     {
-      "id": "auto_deletion",
-      "text": "30日後に自動的に削除されることを理解しました",
+      "id": "deletion_policy",
+      "text": "アップロード後は管理者のみが削除でき、一定期間後に自動削除されることを理解しました",
       "required": true
     }
   ],

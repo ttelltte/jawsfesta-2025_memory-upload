@@ -28,19 +28,19 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
   useEffect(() => {
     const loadChecklistConfig = async () => {
       if (!isOpen) return
-      
+
       try {
         setLoading(true)
         const items = await fetchChecklistConfig()
         setChecklistItems(items)
-        
+
         // 初期状態では全てのチェックボックスをfalseに設定
         const initialCheckedState = items.reduce((acc, item) => {
           acc[item.id] = false
           return acc
         }, {} as Record<string, boolean>)
         setCheckedItems(initialCheckedState)
-        
+
       } catch (err) {
         console.error('確認項目設定の読み込みエラー:', err)
       } finally {
@@ -102,12 +102,12 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-3 z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-sm w-full max-h-[95vh] overflow-y-auto">
+      <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[95vh] overflow-y-auto">
         <div className="p-4">
           <h3 className="text-base font-semibold text-gray-900 mb-3 text-center">
             内容確認
           </h3>
-          
+
           <div className="space-y-3 text-sm">
             {/* 画像プレビューと情報 */}
             <div className="bg-gray-50 p-3 rounded">
@@ -135,8 +135,13 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
 
             {/* 確認項目 */}
             <div>
-              <h4 className="font-medium text-gray-700 mb-2">確認項目</h4>
-              
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="font-medium text-gray-700">確認項目</h4>
+                {!allRequiredChecked && checklistItems.some(item => item.required) && (
+                  <span className="text-xs text-red-400">※必須項目をチェック</span>
+                )}
+              </div>
+
               {loading ? (
                 <div className="bg-gray-50 p-2 rounded">
                   <p className="text-xs text-gray-500">読み込み中...</p>
@@ -146,7 +151,7 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
                   <div className="bg-gray-50 p-2 rounded space-y-2">
                     {checklistItems.map((item) => {
                       const isChecked = checkedItems[item.id] || false
-                      
+
                       return (
                         <label
                           key={item.id}
@@ -174,18 +179,17 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
                       )
                     })}
                   </div>
-                  
+
                   {/* すべて同意ボタンをコンパクトに */}
                   {checklistItems.length > 0 && (
                     <div className="text-center">
                       <button
                         type="button"
                         onClick={handleCheckAll}
-                        className={`px-4 py-1 rounded text-xs font-bold transition-all ${
-                          checklistItems.every(item => checkedItems[item.id])
+                        className={`px-4 py-1 rounded text-xs font-bold transition-all ${checklistItems.every(item => checkedItems[item.id])
                             ? 'bg-red-500 text-white hover:bg-red-600'
                             : 'bg-blue-600 text-white hover:bg-blue-700'
-                        }`}
+                          }`}
                       >
                         <i className={`fas ${checklistItems.every(item => checkedItems[item.id]) ? 'fa-times' : 'fa-check-double'} mr-1`}></i>
                         {checklistItems.every(item => checkedItems[item.id]) ? '全て解除' : 'すべて同意'}
@@ -200,24 +204,12 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
             <div className="bg-yellow-50 border border-yellow-200 p-2 rounded">
               <p className="text-xs text-yellow-800 font-medium flex items-center gap-1">
                 <i className="fas fa-exclamation-triangle"></i>
-                画像は公開され、イベント終了後一定期間後に削除されます
+                画像は公開され、一定期間後に削除されます
               </p>
             </div>
 
 
           </div>
-
-          {/* バリデーションエラーメッセージ */}
-          {!allRequiredChecked && checklistItems.some(item => item.required) && (
-            <div className="bg-red-50 border border-red-200 p-2 rounded">
-              <div className="flex items-center gap-1 text-red-800">
-                <i className="fas fa-exclamation-triangle text-xs"></i>
-                <span className="font-medium text-xs">
-                  必須項目にチェックを入れてください
-                </span>
-              </div>
-            </div>
-          )}
 
           {/* ボタン */}
           <div className="flex space-x-2 mt-4">
@@ -230,11 +222,10 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
             <button
               onClick={handleConfirm}
               disabled={!allRequiredChecked}
-              className={`flex-1 px-3 py-2 rounded text-sm transition-colors font-medium ${
-                allRequiredChecked
-                  ? 'bg-blue-600 text-white hover:bg-blue-700'
+              className={`flex-1 px-3 py-2 rounded text-sm transition-colors font-medium ${allRequiredChecked
+                  ? 'bg-yellow-600 text-white hover:bg-yellow-700'
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              }`}
+                }`}
             >
               アップロード実行
             </button>
