@@ -1,5 +1,56 @@
 # Implementation Plan
 
+## 新機能追加タスク
+
+- [ ] 16. ユーザー名保持機能の実装
+- [ ] 16.1 localStorage管理ユーティリティの作成
+  - UserNameStorageユーティリティクラスの実装
+  - 保存・取得・削除・期限チェック機能
+  - 7日間の有効期限管理
+  - _Requirements: 7.1, 7.5, 7.6_
+
+- [ ] 16.2 アップロード画面での名前自動入力機能
+  - ImageUpload.tsxにlocalStorage連携を追加
+  - コンポーネントマウント時に保存された名前を読み込み
+  - 名前入力時に自動保存
+  - クリアボタンの実装
+  - _Requirements: 7.2, 7.3, 7.4_
+
+- [ ] 17. 削除リクエスト機能の実装（バックエンド）
+- [ ] 17.1 SNSトピックとSubscriptionの作成
+  - CDK StackにSNSトピックを追加
+  - Email Subscriptionの設定
+  - 環境変数でのメールアドレス管理
+  - _Requirements: 8.4, 8.5_
+
+- [ ] 17.2 Delete Request Lambda関数の実装
+  - deleteRequest.js Lambda関数の作成
+  - リクエストバリデーション（画像ID、削除理由）
+  - DynamoDBから画像メタデータ取得
+  - SNS通知送信（件名にphotoId含む）
+  - エラーハンドリング
+  - _Requirements: 8.3, 8.4, 8.5, 8.7, 8.8_
+
+- [ ] 17.3 API Gatewayエンドポイントの追加
+  - /api/delete-request エンドポイントの作成
+  - Lambda関数との統合
+  - CORS設定の適用
+  - _Requirements: 8.3_
+
+- [ ] 18. 削除リクエスト機能の実装（フロントエンド）
+- [ ] 18.1 DeleteRequestDialogコンポーネントの作成
+  - 削除理由入力フィールド（任意）
+  - 確認ダイアログの実装
+  - API呼び出し処理
+  - 成功・エラーフィードバック表示
+  - _Requirements: 8.2, 8.3, 8.6, 8.7, 8.8_
+
+- [ ] 18.2 画像詳細モーダルへの削除ボタン追加
+  - HomePage.tsxの画像詳細モーダルに「削除リクエストを送る」ボタンを追加
+  - 控えめなデザインで配置
+  - DeleteRequestDialogとの連携
+  - _Requirements: 8.1, 8.2_
+
 ## 追加要件対応タスク（既存実装の改善）
 
 - [x] 15. モバイル最適化とデザイン統一

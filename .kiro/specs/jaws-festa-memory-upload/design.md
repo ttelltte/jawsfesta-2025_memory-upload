@@ -28,8 +28,10 @@ JAWS FESTA 2025 思い出アップロードは、AWS CDKを使用したサーバ
 - **Storage**: Amazon S3
 - **API**: Amazon API Gateway (REST API)
 - **CDN**: Amazon CloudFront
+- **Notification**: Amazon SNS
 - **Infrastructure**: AWS CDK (TypeScript)
 - **Build Tool**: Vite (React開発環境)
+- **Client Storage**: localStorage（ユーザー名保持用）
 
 ### CDK Stack構成
 
@@ -42,6 +44,8 @@ JAWS FESTA 2025 思い出アップロードは、AWS CDKを使用したサーバ
 ├── DynamoDB Table
 ├── Lambda Functions
 ├── API Gateway
+├── SNS Topic (削除リクエスト通知用)
+├── SNS Subscription (Email)
 └── IAM Roles & Policies
 ```
 
@@ -53,12 +57,14 @@ JAWS FESTA 2025 思い出アップロードは、AWS CDKを使用したサーバ
 - **画像アップロード機能**
   - ファイル選択ボタン
   - カメラ撮影ボタン（モバイル対応）
-
   - 画像プレビュー表示（回転機能付き）
   - コンパクトなアップロードエリア（アルバムを主役にするため）
   - フローティングアップロードボタン（下スクロール時に右下表示）
 - **メタデータ入力**
   - 名前入力フィールド（任意）
+    - localStorageから保存された名前を自動読み込み
+    - 入力時に自動保存（7日間有効）
+    - クリアボタンで保存削除
   - コメント入力フィールド（任意）
 - **確認項目チェック**
   - 動的に生成されるチェックボックス一覧
@@ -77,6 +83,11 @@ JAWS FESTA 2025 思い出アップロードは、AWS CDKを使用したサーバ
   - 表示切り替えボタン
   - ページネーション（金色 #FFD700 ボタンデザイン）
   - 画像詳細モーダル（金色 #FFD700 の閉じるボタン）
+- **削除リクエスト機能**
+  - 画像詳細モーダル内に控えめな「削除リクエストを送る」ボタン
+  - 削除理由入力ダイアログ（任意）
+  - 確認ダイアログ表示
+  - 送信成功/失敗のフィードバック
 - **レスポンシブデザイン（Tailwind CSS）**
   - モバイル：1列表示
   - タブレット：2-3列表示
@@ -89,6 +100,8 @@ JAWS FESTA 2025 思い出アップロードは、AWS CDKを使用したサーバ
 - **Layout**: 共通レイアウトコンポーネント
 - **FloatingUploadButton**: スクロール時に表示されるフローティングボタン
 - **GoldButton**: 統一された金色ボタンコンポーネント（ページネーション、閉じるボタン用）
+- **DeleteRequestDialog**: 削除リクエスト送信用ダイアログコンポーネント
+- **UserNameStorage**: localStorage管理用ユーティリティ（保存期間7日）
 
 ### 2. Backend Components
 
@@ -117,12 +130,22 @@ JAWS FESTA 2025 思い出アップロードは、AWS CDKを使用したサーバ
   1. DynamoDBから確認項目設定を取得
   2. JSON形式でレスポンス返却
 
+**Delete Request Function** (`deleteRequest.js`)
+- **役割**: 削除リクエストの受付と通知
+- **処理フロー**:
+  1. リクエストバリデーション（画像ID、削除理由）
+  2. DynamoDBから画像メタデータ取得
+  3. Amazon SNSトピックへの通知送信
+  4. 通知内容: 画像ID、アップロード者名、削除理由、S3画像URL
+  5. レスポンス返却
+
 #### 2.2 API Endpoints
 
 ```
-GET  /api/photos     - 画像一覧取得
-POST /api/upload     - 画像アップロード
-GET  /api/config     - 確認項目設定取得
+GET  /api/photos          - 画像一覧取得
+POST /api/upload          - 画像アップロード
+GET  /api/config          - 確認項目設定取得
+POST /api/delete-request  - 削除リクエスト送信
 ```
 
 ## Data Models
@@ -331,6 +354,69 @@ xl: 1280px  /* 大画面PC */
 - **実装**: React Hook（useEffect + useState）でスクロール位置を監視
 - **配置**: HomePage.tsx 内に統合
 
+## localStorage Data Structure
+
+### ユーザー名保存
+
+```javascript
+{
+  key: "jaws-festa-uploader-name",
+  value: {
+    name: "山田太郎",
+    savedAt: 1647072000000,  // Unix timestamp
+    expiresAt: 1647676800000 // 7日後のUnix timestamp
+  }
+}
+```
+
+### 保存・取得ロジック
+
+```javascript
+// 保存時
+const saveUserName = (name) => {
+  const now = Date.now();
+  const expiresAt = now + (7 * 24 * 60 * 60 * 1000); // 7日後
+  localStorage.setItem('jaws-festa-uploader-name', JSON.stringify({
+    name,
+    savedAt: now,
+    expiresAt
+  }));
+};
+
+// 取得時（期限チェック付き）
+const getUserName = () => {
+  const stored = localStorage.getItem('jaws-festa-uploader-name');
+  if (!stored) return null;
+  
+  const data = JSON.parse(stored);
+  if (Date.now() > data.expiresAt) {
+    localStorage.removeItem('jaws-festa-uploader-name');
+    return null;
+  }
+  
+  return data.name;
+};
+```
+
+## SNS Notification Structure
+
+### 削除リクエスト通知フォーマット
+
+```json
+{
+  "Subject": "[JAWS FESTA] 画像削除リクエスト - abc123-def456-ghi789",
+  "Message": {
+    "requestTime": "2025-03-22T14:30:25+09:00",
+    "photoId": "abc123-def456-ghi789",
+    "uploaderName": "山田太郎",
+    "deleteReason": "誤ってアップロードしました",
+    "s3Key": "images/山田太郎_20250322_143025_abc123.jpg",
+    "imageUrl": "https://d1234567890.cloudfront.net/images/山田太郎_20250322_143025_abc123.jpg",
+    "uploadTime": "2025-03-22T14:30:25+09:00"
+  }
+}
+```
+
 ## Implementation Notes
 
 ### 1. CDK実装のポイント
@@ -345,6 +431,12 @@ xl: 1280px  /* 大画面PC */
 - 最小権限の原則
 - リソース名の自動生成（重複回避）
 
+#### 1.3 SNS設定
+- SNSトピックの作成（削除リクエスト通知用）
+- Email Subscriptionの設定（開発者メールアドレス）
+- Lambda関数へのSNS Publish権限付与
+- トピックARNの環境変数設定
+
 ### 2. セキュリティ考慮事項
 
 #### 2.1 基本的なセキュリティ
@@ -356,6 +448,10 @@ xl: 1280px  /* 大画面PC */
 - WAF設定の準備
 - CloudTrailログ設定
 - 認証機能の追加準備
+
+#### 2.3 プライバシー保護
+- localStorageに保存する情報は名前のみ（個人識別情報は最小限）
+- 7日間の自動削除による情報保持期間の制限
 
 ### 3. パフォーマンス最適化
 
