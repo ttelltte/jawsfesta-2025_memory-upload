@@ -1,5 +1,6 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import ErrorMessage from './ErrorMessage'
+import { getUserName, saveUserName, clearUserName } from '../utils/userNameStorage'
 
 export interface MetadataFormData {
   uploaderName: string
@@ -25,12 +26,30 @@ export const MetadataForm: React.FC<MetadataFormProps> = ({
   })
   const [validationErrors, setValidationErrors] = useState<Partial<MetadataFormData>>({})
 
+  // コンポーネントマウント時に保存された名前を読み込み
+  useEffect(() => {
+    const storedName = getUserName()
+    if (storedName) {
+      setFormData(prev => ({
+        ...prev,
+        uploaderName: storedName
+      }))
+    }
+  }, [])
+
   // フォーム入力の変更処理
   const handleInputChange = (field: keyof MetadataFormData, value: string) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
     }))
+    
+    // 名前入力時に自動保存
+    if (field === 'uploaderName') {
+      if (value.trim()) {
+        saveUserName(value.trim())
+      }
+    }
     
     // 入力時にバリデーションエラーをクリア
     if (validationErrors[field]) {
@@ -39,6 +58,15 @@ export const MetadataForm: React.FC<MetadataFormProps> = ({
         [field]: undefined
       }))
     }
+  }
+
+  // 名前クリア処理
+  const handleClearName = () => {
+    setFormData(prev => ({
+      ...prev,
+      uploaderName: ''
+    }))
+    clearUserName()
   }
 
   // フォームバリデーション
@@ -86,23 +114,37 @@ export const MetadataForm: React.FC<MetadataFormProps> = ({
         <label htmlFor="uploaderName" className="block text-xs font-medium text-gray-700 mb-1">
           お名前（任意・空欄で匿名）
         </label>
-        <input
-          type="text"
-          id="uploaderName"
-          value={formData.uploaderName}
-          onChange={(e) => handleInputChange('uploaderName', e.target.value)}
-          placeholder="例: 山田太郎"
-          className={`
-            w-full px-2 py-1.5 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-yellow-500
-            ${validationErrors.uploaderName 
-              ? 'border-red-300 focus:ring-red-500' 
-              : 'border-gray-300'
-            }
-          `}
-          disabled={isSubmitting || disabled}
-          maxLength={20}
-          data-testid="uploader-name"
-        />
+        <div className="relative">
+          <input
+            type="text"
+            id="uploaderName"
+            value={formData.uploaderName}
+            onChange={(e) => handleInputChange('uploaderName', e.target.value)}
+            placeholder="例: 山田太郎"
+            className={`
+              w-full px-2 py-1.5 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-yellow-500
+              ${formData.uploaderName ? 'pr-16' : ''}
+              ${validationErrors.uploaderName 
+                ? 'border-red-300 focus:ring-red-500' 
+                : 'border-gray-300'
+              }
+            `}
+            disabled={isSubmitting || disabled}
+            maxLength={20}
+            data-testid="uploader-name"
+          />
+          {formData.uploaderName && (
+            <button
+              type="button"
+              onClick={handleClearName}
+              className="absolute right-1 top-1/2 -translate-y-1/2 px-2 py-0.5 text-xs text-gray-500 hover:text-red-600 hover:bg-gray-100 rounded transition-colors"
+              disabled={isSubmitting || disabled}
+              data-testid="clear-name-button"
+            >
+              クリア
+            </button>
+          )}
+        </div>
         {validationErrors.uploaderName && (
           <p className="mt-0.5 text-xs text-red-600">{validationErrors.uploaderName}</p>
         )}

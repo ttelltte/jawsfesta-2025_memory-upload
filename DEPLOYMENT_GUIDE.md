@@ -4,6 +4,23 @@
 
 このドキュメントは、JAWS FESTA 2025 思い出アップロードプロジェクトの**シンプルなデプロイ手順**を説明します。
 
+## 🚀 クイックスタート（経験者向け）
+
+```bash
+# 1. 依存関係のインストール（初回のみ）
+cd frontend && npm install
+cd ../infrastructure && npm install
+cd ../backend && npm install
+
+# 2. フロントエンドのビルドとデプロイ
+cd ../infrastructure
+node scripts/deploy-frontend.js dev --build
+
+# 完了！
+```
+
+**初めての方は、以下の詳細な手順を参照してください。**
+
 ## 🎯 前提条件
 
 ### 必要なソフトウェア
@@ -24,6 +41,31 @@ $env:AWS_PROFILE = "your-profile-name"
 ```
 
 ## 🚀 デプロイ手順
+
+### ✅ デプロイ前チェックリスト
+
+デプロイを実行する前に、以下を確認してください：
+
+```bash
+# 1. AWS認証情報の確認
+aws sts get-caller-identity
+
+# 2. frontendの依存関係を確認
+cd frontend
+dir node_modules\.bin\vite*
+# vite.cmd が存在しない場合は npm install を実行
+
+# 3. ビルドが成功するか確認
+npm run build
+# ✓ built in X.XXs と表示されればOK
+
+# 4. infrastructureの依存関係を確認
+cd ../infrastructure
+npm list aws-cdk-lib
+# aws-cdk-lib が表示されればOK
+```
+
+**チェックリストが全て通れば、デプロイ準備完了です！**
 
 ### ⚡ 最適化デプロイ（推奨）
 
@@ -80,14 +122,68 @@ https://your-domain.com?admin=<ADMIN_PASSWORD>
 - ⛔ **スキップ**: assets/内の画像ファイル
 - 🔒 **保護**: images/内のユーザー投稿画像
 
+### ⚠️ 重要: 依存関係のインストール
+
+**デプロイ前に必ず各ディレクトリで依存関係をインストールしてください。**
+
+```bash
+# フロントエンド（最重要！）
+cd frontend
+npm install
+
+# インフラストラクチャ
+cd ../infrastructure
+npm install
+
+# バックエンド
+cd ../backend
+npm install
+```
+
+**なぜこれが重要なのか？**
+
+- `frontend/node_modules`に`vite`がインストールされていないと、ビルドが失敗します
+- デプロイスクリプトは`npm run build`を実行しますが、`vite`コマンドが見つからないとエラーになります
+- 各ディレクトリには独立した`package.json`があり、それぞれで`npm install`が必要です
+
+**よくある間違い:**
+```bash
+# ❌ 間違い: ルートディレクトリでnpm install
+cd jawsfesta-2025_memory-upload
+npm install  # これは何もインストールしません
+
+# ✅ 正しい: 各ディレクトリで個別にnpm install
+cd frontend
+npm install  # frontendの依存関係をインストール
+```
+
+**トラブルシューティング:**
+
+もし`vite`コマンドが見つからないエラーが出た場合：
+
+```bash
+# 1. frontendディレクトリに移動
+cd frontend
+
+# 2. node_modulesを削除して再インストール
+Remove-Item -Recurse -Force node_modules, package-lock.json -ErrorAction SilentlyContinue
+npm install
+
+# 3. viteがインストールされたか確認
+dir node_modules\.bin\vite*
+
+# 4. ビルドをテスト
+npm run build
+```
+
 ### ステップ1: 初回セットアップ（初回のみ）
 
 ```bash
-# 1. 依存関係インストール
-cd infrastructure
+# 1. 依存関係インストール（上記の「重要: 依存関係のインストール」を参照）
+cd frontend
 npm install
 
-cd ../frontend  
+cd ../infrastructure
 npm install
 
 cd ../backend
@@ -192,15 +288,40 @@ cd infrastructure
 npm run deploy:dev
 ```
 
-#### 2. フロントエンドビルドエラー
+#### 2. フロントエンドビルドエラー（'vite' は認識されていません）
 
+**エラーメッセージ:**
+```
+'vite' は、内部コマンドまたは外部コマンド、
+操作可能なプログラムまたはバッチ ファイルとして認識されていません。
+```
+
+**原因:**
+- `frontend/node_modules`に`vite`がインストールされていない
+- 間違ったディレクトリで`npm install`を実行した
+- `node_modules`が削除されたか、不完全なインストール
+
+**解決方法:**
 ```bash
-# 原因: 依存関係の問題
-# 解決: 依存関係を再インストール
+# 1. frontendディレクトリに移動
 cd frontend
+
+# 2. 依存関係を再インストール
 Remove-Item -Recurse -Force node_modules, package-lock.json -ErrorAction SilentlyContinue
 npm install
+
+# 3. viteがインストールされたか確認
+dir node_modules\.bin\vite*
+# vite.cmd, vite.ps1 が表示されればOK
+
+# 4. ビルドをテスト
+npm run build
 ```
+
+**予防策:**
+- デプロイ前に必ず`frontend`ディレクトリで`npm install`を実行
+- `node_modules`を削除した場合は、必ず再インストール
+- 各ディレクトリ（frontend, infrastructure, backend）で個別に`npm install`が必要
 
 #### 3. AWS認証エラー
 
@@ -321,13 +442,13 @@ aws logs filter-log-events \
 
 ### 必須環境変数
 
-| 項目 | 説明 | 例 |
-|------|------|-----|
-| `stackName` | CloudFormation スタック名 | `JawsFestaMemoryUploadDev` |
-| `account` | AWS アカウント ID | `123456789012` |
-| `region` | AWS リージョン | `ap-northeast-1` |
-| `domainName` | カスタムドメイン名 | `your-domain.example.com` |
-| `certificateArn` | SSL証明書のARN | `arn:aws:acm:us-east-1:...` |
+| 項目             | 説明                      | 例                          |
+| ---------------- | ------------------------- | --------------------------- |
+| `stackName`      | CloudFormation スタック名 | `JawsFestaMemoryUploadDev`  |
+| `account`        | AWS アカウント ID         | `123456789012`              |
+| `region`         | AWS リージョン            | `ap-northeast-1`            |
+| `domainName`     | カスタムドメイン名        | `your-domain.example.com`   |
+| `certificateArn` | SSL証明書のARN            | `arn:aws:acm:us-east-1:...` |
 
 ### AWS認証情報の設定
 
@@ -381,15 +502,128 @@ export AWS_PROFILE=your-profile-name
 - ✅ シンプルな手順
 - ✅ エラーハンドリング
 
+## � 環ポ境診断コマンド
+
+問題が発生した場合、以下のコマンドで環境を診断できます：
+
+```bash
+# 診断スクリプトを実行
+powershell -ExecutionPolicy Bypass -Command "
+Write-Host '=== 環境診断 ===' -ForegroundColor Cyan
+
+# Node.js バージョン
+Write-Host 'Node.js:' -NoNewline
+node --version
+
+# npm バージョン
+Write-Host 'npm:' -NoNewline
+npm --version
+
+# AWS CLI バージョン
+Write-Host 'AWS CLI:' -NoNewline
+aws --version
+
+# AWS 認証情報
+Write-Host 'AWS Account:' -NoNewline
+aws sts get-caller-identity --query Account --output text
+
+# frontend の依存関係
+Write-Host 'Frontend vite:' -NoNewline
+if (Test-Path 'frontend/node_modules/.bin/vite.cmd') {
+    Write-Host ' インストール済み' -ForegroundColor Green
+} else {
+    Write-Host ' 未インストール' -ForegroundColor Red
+}
+
+# infrastructure の依存関係
+Write-Host 'Infrastructure CDK:' -NoNewline
+if (Test-Path 'infrastructure/node_modules/aws-cdk-lib') {
+    Write-Host ' インストール済み' -ForegroundColor Green
+} else {
+    Write-Host ' 未インストール' -ForegroundColor Red
+}
+
+Write-Host '=== 診断完了 ===' -ForegroundColor Cyan
+"
+```
+
 ## 📞 サポート
 
 問題が発生した場合：
 
-1. エラーメッセージを確認
-2. トラブルシューティングセクションを参照
-3. それでも解決しない場合は、エラーメッセージと実行環境を記録して報告
+1. **環境診断コマンドを実行**して現在の状態を確認
+2. **エラーメッセージを確認**
+3. **トラブルシューティングセクションを参照**
+4. **よくある質問（FAQ）を確認**
+5. それでも解決しない場合は、エラーメッセージと実行環境を記録して報告
+
+## ❓ よくある質問（FAQ）
+
+### Q1: 以前はビルドが成功していたのに、突然失敗するようになった
+
+**A:** `frontend/node_modules`が削除されたか、不完全な状態になっている可能性があります。
+
+```bash
+cd frontend
+npm install
+npm run build
+```
+
+### Q2: どのディレクトリでnpm installを実行すればいいの？
+
+**A:** プロジェクトには3つの独立したNode.jsプロジェクトがあります：
+
+```bash
+# 1. フロントエンド（React + Vite）
+cd frontend
+npm install
+
+# 2. インフラストラクチャ（AWS CDK）
+cd infrastructure
+npm install
+
+# 3. バックエンド（Lambda関数）
+cd backend
+npm install
+```
+
+**ルートディレクトリで`npm install`を実行しても何もインストールされません。**
+
+### Q3: デプロイスクリプトが「viteが見つからない」と言われる
+
+**A:** `frontend`ディレクトリで`npm install`を実行していないか、インストールが不完全です。
+
+```bash
+cd frontend
+npm install
+# 276パッケージがインストールされることを確認
+```
+
+### Q4: node_modulesを削除してしまった
+
+**A:** 各ディレクトリで再度`npm install`を実行してください。
+
+```bash
+cd frontend
+npm install
+
+cd ../infrastructure
+npm install
+
+cd ../backend
+npm install
+```
+
+### Q5: デプロイ前に毎回npm installが必要？
+
+**A:** いいえ、依存関係が変更されていない限り不要です。ただし：
+
+- 初回セットアップ時は必須
+- `node_modules`を削除した場合は必須
+- `package.json`が更新された場合は必須
+- エラーが出た場合は再インストールを試す
 
 ---
 
-**最終更新**: 2025年9月24日  
-**バージョン**: 2.0.0 (シンプル版)
+**最終更新**: 2025年10月9日  
+**バージョン**: 2.1.0 (依存関係管理の改善版)
