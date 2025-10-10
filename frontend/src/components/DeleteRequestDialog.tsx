@@ -56,7 +56,7 @@ export const DeleteRequestDialog: React.FC<DeleteRequestDialogProps> = ({
             <div className="bg-blue-50 border border-blue-200 p-3 rounded">
               <p className="text-xs text-blue-800">
                 <i className="fas fa-info-circle mr-1"></i>
-                この画像の削除を管理者にリクエストします。管理者が確認後、対応いたします。
+                この画像の削除を管理者にリクエストします。
               </p>
             </div>
 
@@ -82,7 +82,7 @@ export const DeleteRequestDialog: React.FC<DeleteRequestDialogProps> = ({
             {/* 削除理由入力 */}
             <div>
               <label htmlFor="deleteReason" className="block text-xs font-medium text-gray-700 mb-1">
-                削除理由（任意）
+                削除理由
               </label>
               <textarea
                 id="deleteReason"
@@ -109,7 +109,7 @@ export const DeleteRequestDialog: React.FC<DeleteRequestDialogProps> = ({
             <div className="bg-yellow-50 border border-yellow-200 p-2 rounded">
               <p className="text-xs text-yellow-800">
                 <i className="fas fa-exclamation-triangle mr-1"></i>
-                削除リクエストは管理者に通知されます。即座に削除されるわけではありません。
+                削除リクエストは管理者に通知され、管理者が確認後、対応いたします。
               </p>
             </div>
           </div>
@@ -140,7 +140,7 @@ export const DeleteRequestDialog: React.FC<DeleteRequestDialogProps> = ({
               ) : (
                 <>
                   <i className="fas fa-paper-plane mr-1"></i>
-                  削除リクエストを送信
+                  リクエストを送信
                 </>
               )}
             </button>

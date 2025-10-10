@@ -848,27 +848,79 @@ export const HomePage: React.FC = () => {
 
         {/* 画像詳細モーダル - 画像最大表示 */}
         {selectedPhoto && (
-          <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50" onClick={handleCloseDetail}>
-            <div className="relative w-full h-full max-w-7xl mx-auto p-4 flex flex-col" onClick={(e) => e.stopPropagation()}>
-              {/* ヘッダー */}
-              <div className="flex justify-between items-center mb-4 text-white">
-                <div className="flex items-center gap-3">
-                  <i className="fas fa-image text-xl"></i>
-                  <h3 className="text-lg sm:text-xl font-bold">画像詳細</h3>
+          <div className="fixed inset-0 bg-black bg-opacity-95 flex items-center justify-center z-50 p-2 sm:p-4" onClick={handleCloseDetail}>
+            <div className="relative w-full h-full max-w-6xl mx-auto flex flex-col" onClick={(e) => e.stopPropagation()}>
+              {/* ヘッダー - メタデータ表示 */}
+              <div className="bg-white bg-opacity-95 rounded-t-xl px-4 py-3 sm:px-6 sm:py-4 flex-shrink-0 shadow-lg mb-2">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1 space-y-2">
+                    {/* 日時 - 控えめ */}
+                    <div className="flex items-center gap-2 text-gray-500 text-xs sm:text-sm">
+                      <i className="fas fa-clock"></i>
+                      <span>
+                        {new Date(selectedPhoto.uploadTime).toLocaleString('ja-JP', {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          timeZone: 'Asia/Tokyo'
+                        })}
+                      </span>
+                    </div>
+                    
+                    {/* 投稿者 - 目立たせる */}
+                    <div className="flex items-center gap-2">
+                      <i className="fas fa-user text-blue-600 text-lg"></i>
+                      <span className="text-gray-900 font-bold text-base sm:text-lg">
+                        {selectedPhoto.uploaderName && selectedPhoto.uploaderName !== 'Anonymous' ? selectedPhoto.uploaderName : '匿名'}
+                      </span>
+                    </div>
+                    
+                    {/* コメント - 目立たせる */}
+                    {selectedPhoto.comment && (
+                      <div className="flex items-start gap-2">
+                        <i className="fas fa-comment text-purple-600 text-lg mt-0.5 flex-shrink-0"></i>
+                        <p className="text-gray-900 text-base sm:text-lg font-medium leading-relaxed">
+                          {selectedPhoto.comment}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* 右上ボタンエリア */}
+                  <div className="flex items-start gap-2 flex-shrink-0">
+                    {/* 削除依頼ボタン */}
+                    {!isAdmin && (
+                      <button
+                        onClick={() => {
+                          handleDeleteRequest(selectedPhoto)
+                          handleCloseDetail()
+                        }}
+                        className="px-3 py-2 sm:px-4 sm:py-2 rounded-lg bg-red-50 border-2 border-red-300 text-red-700 hover:bg-red-100 transition-colors flex items-center gap-2 font-medium shadow-sm"
+                        title="この画像の削除を管理者にリクエストします"
+                      >
+                        <i className="fas fa-flag text-base"></i>
+                        <span className="hidden sm:inline">削除依頼</span>
+                      </button>
+                    )}
+                    
+                    {/* 閉じるボタン */}
+                    <button
+                      onClick={handleCloseDetail}
+                      className="w-10 h-10 flex items-center justify-center rounded-full transition-all shadow-lg hover:scale-110 flex-shrink-0"
+                      style={{ backgroundColor: '#FFD700', color: '#000' }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#FFC700'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#FFD700'}
+                    >
+                      <i className="fas fa-times text-xl"></i>
+                    </button>
+                  </div>
                 </div>
-                <button
-                  onClick={handleCloseDetail}
-                  className="text-2xl sm:text-3xl leading-none p-2 rounded-full transition-all shadow-md"
-                  style={{ backgroundColor: '#FFD700', color: '#000' }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#FFC700'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#FFD700'}
-                >
-                  <i className="fas fa-times"></i>
-                </button>
               </div>
               
-              {/* 画像表示エリア - サイズ制限 */}
-              <div className="flex-1 flex items-center justify-center mb-4 min-h-0 overflow-hidden">
+              {/* 画像表示エリア - 最大化 */}
+              <div className="flex-1 flex items-center justify-center min-h-0 overflow-hidden">
                 {selectedPhoto.presignedUrl ? (
                   <img
                     src={selectedPhoto.presignedUrl}
@@ -883,79 +935,6 @@ export const HomePage: React.FC = () => {
                     </div>
                   </div>
                 )}
-              </div>
-              
-              {/* 詳細情報 - コンパクト表示 */}
-              <div className="bg-white rounded-xl p-4 sm:p-6 max-h-80 overflow-y-auto flex-shrink-0">
-                {/* コメント - 最初に表示（常に表示） */}
-                <div className="mb-4 pb-4 border-b border-gray-200">
-                  <div className="flex items-start gap-2">
-                    <i className="fas fa-comment text-purple-600 mt-1"></i>
-                    <div className="flex-1">
-                      <div className="text-xs text-gray-500 mb-1">コメント</div>
-                      <div className="text-sm text-gray-900 whitespace-pre-wrap break-words">
-                        {selectedPhoto.comment || 'コメントはありません'}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="flex items-center gap-2">
-                    <i className="fas fa-user text-blue-600"></i>
-                    <div>
-                      <div className="text-xs text-gray-500">投稿者</div>
-                      <div className="font-medium text-gray-900">
-                        {selectedPhoto.uploaderName && selectedPhoto.uploaderName !== 'Anonymous' ? selectedPhoto.uploaderName : '匿名'}
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-2">
-                    <i className="fas fa-clock text-green-600"></i>
-                    <div>
-                      <div className="text-xs text-gray-500">投稿日時</div>
-                      <div className="text-sm text-gray-900">
-                        {new Date(selectedPhoto.uploadTime).toLocaleString('ja-JP', {
-                          year: 'numeric',
-                          month: 'short',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                          timeZone: 'Asia/Tokyo'
-                        })}
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* ボタンエリア - スマホ対応（縦並び） */}
-                  <div className="sm:col-span-1 flex flex-col sm:flex-row gap-2">
-                    {/* 削除リクエストボタン - 控えめなデザイン */}
-                    {!isAdmin && (
-                      <button
-                        onClick={() => {
-                          handleDeleteRequest(selectedPhoto)
-                          handleCloseDetail()
-                        }}
-                        className="w-full sm:flex-1 px-3 py-2 rounded-lg transition-colors text-xs font-medium border border-gray-300 text-gray-600 hover:bg-gray-50"
-                        title="この画像の削除を管理者にリクエストします"
-                      >
-                        <i className="fas fa-flag mr-1"></i>
-                        削除依頼
-                      </button>
-                    )}
-                    <button
-                      onClick={handleCloseDetail}
-                      className={`w-full ${!isAdmin ? 'sm:flex-1' : ''} px-4 py-2 rounded-lg transition-colors text-sm font-medium shadow-md`}
-                      style={{ backgroundColor: '#FFD700', color: '#000' }}
-                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#FFC700'}
-                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#FFD700'}
-                    >
-                      <i className="fas fa-times mr-2"></i>
-                      閉じる
-                    </button>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
