@@ -9,7 +9,7 @@ export interface ValidationOptions {
 }
 
 const DEFAULT_OPTIONS: Required<ValidationOptions> = {
-  maxSizeInMB: 7, // Base64エンコード後のサイズを考慮（7MB → 約9.3MB）
+  maxSizeInMB: 20, // 20MB超えはエラー（圧縮で10MB以下にする）
   allowedTypes: ['image/*']
 }
 
@@ -20,9 +20,11 @@ export const validateFileSize = (file: File, maxSizeInMB: number): ValidationRes
   const maxSizeInBytes = maxSizeInMB * 1024 * 1024
   
   if (file.size > maxSizeInBytes) {
+    // ユーザーには10MBと表示（実際は20MBまで受け付けて圧縮）
+    const displaySize = maxSizeInMB > 15 ? 10 : maxSizeInMB
     return {
       isValid: false,
-      error: `ファイルサイズは${maxSizeInMB}MB以下にしてください（現在: ${(file.size / 1024 / 1024).toFixed(2)}MB）`
+      error: `ファイルサイズは${displaySize}MB以下にしてください（現在: ${(file.size / 1024 / 1024).toFixed(2)}MB）`
     }
   }
   

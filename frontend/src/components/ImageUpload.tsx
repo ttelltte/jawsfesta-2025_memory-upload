@@ -54,9 +54,9 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
 
   // ファイル選択処理
   const handleFileSelect = useCallback((file: File) => {
-    // ファイルバリデーション
+    // ファイルバリデーション（20MB超えは受け付けない）
     const validation = validateFile(file, {
-      maxSizeInMB: 10,
+      maxSizeInMB: 20, // 20MB超えはエラー
       allowedTypes: ['image/*']
     })
 

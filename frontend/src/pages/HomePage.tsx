@@ -4,6 +4,7 @@ import { DeleteRequestDialog } from '../components/DeleteRequestDialog'
 import { UploadSuccessMessage } from '../components/SuccessMessage'
 import { validateFile, normalizeError, logError } from '../utils'
 import { useAdmin } from '../hooks/useAdmin'
+import { compressImage, shouldCompress } from '../utils/imageCompression'
 
 import { uploadImage, canUpload, type UploadProgress as UploadProgressType } from '../api/upload'
 import { fetchPhotos, Photo } from '../api/photos'
@@ -152,7 +153,7 @@ export const HomePage: React.FC = () => {
     }
 
     const validation = validateFile(file, {
-      maxSizeInMB: 7, // Base64エンコード後のサイズを考慮（API Gateway 10MB制限対応）
+      maxSizeInMB: 20, // 20MB超えはエラー（圧縮で10MB以下にする）
       allowedTypes: ['image/*']
     })
 
@@ -194,9 +195,19 @@ export const HomePage: React.FC = () => {
     setUploadError(null)
 
     try {
+      // 画像圧縮（1MB以上の場合）
+      let fileToUpload = selectedImage
+      if (shouldCompress(selectedImage, 1)) {
+        fileToUpload = await compressImage(selectedImage, {
+          maxSizeMB: 5, // 5MBまで圧縮
+          maxWidthOrHeight: 3840, // 4K対応
+          quality: 0.85, // バランスの良い品質
+        })
+      }
+
       const response = await uploadImage(
         {
-          file: selectedImage,
+          file: fileToUpload,
           uploaderName: pendingMetadata.uploaderName,
           comment: pendingMetadata.comment,
           checkedItems: checkedItems // 確認ダイアログからのチェック状態を渡す
