@@ -206,8 +206,8 @@ export class MemoryUploadStack extends cdk.Stack {
       runtime: lambda.Runtime.NODEJS_18_X,
       handler: 'index.handler',
       code: lambda.Code.fromAsset(path.join(__dirname, '../../lambda/upload')),
-      timeout: cdk.Duration.seconds(30),
-      memorySize: 512,
+      timeout: cdk.Duration.seconds(90), // 大きなファイル処理のため延長
+      memorySize: 1536, // 大きなファイル処理のため増量
       environment: {
         // DynamoDB テーブル名
         PHOTOS_TABLE_NAME: this.photosTable.tableName,
@@ -221,7 +221,7 @@ export class MemoryUploadStack extends cdk.Stack {
         REGION: this.region,
 
         // アプリケーション設定
-        MAX_FILE_SIZE: config.upload?.maxFileSize || '10485760', // 10MB
+        MAX_FILE_SIZE: config.upload?.maxFileSize || '7340032', // 7MB (Base64エンコード後も10MB以内)
         ALLOWED_FILE_TYPES: config.upload?.allowedFileTypes || 'image/*',
         TTL_DAYS: config.upload?.ttlDays || '30',
 

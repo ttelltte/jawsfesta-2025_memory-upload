@@ -152,7 +152,7 @@ export const HomePage: React.FC = () => {
     }
 
     const validation = validateFile(file, {
-      maxSizeInMB: 10,
+      maxSizeInMB: 7, // Base64エンコード後のサイズを考慮（API Gateway 10MB制限対応）
       allowedTypes: ['image/*']
     })
 
@@ -868,12 +868,12 @@ export const HomePage: React.FC = () => {
               </div>
               
               {/* 画像表示エリア - サイズ制限 */}
-              <div className="flex-1 flex items-center justify-center mb-4 min-h-0">
+              <div className="flex-1 flex items-center justify-center mb-4 min-h-0 overflow-hidden">
                 {selectedPhoto.presignedUrl ? (
                   <img
                     src={selectedPhoto.presignedUrl}
                     alt={selectedPhoto.comment || '投稿画像'}
-                    className="max-w-full max-h-[calc(100vh-200px)] object-contain rounded-lg shadow-2xl"
+                    className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
                   />
                 ) : (
                   <div className="w-64 h-64 flex items-center justify-center text-gray-400 bg-gray-800 rounded-lg">
@@ -886,7 +886,20 @@ export const HomePage: React.FC = () => {
               </div>
               
               {/* 詳細情報 - コンパクト表示 */}
-              <div className="bg-white rounded-xl p-4 sm:p-6 max-h-48 overflow-y-auto">
+              <div className="bg-white rounded-xl p-4 sm:p-6 max-h-80 overflow-y-auto flex-shrink-0">
+                {/* コメント - 最初に表示（常に表示） */}
+                <div className="mb-4 pb-4 border-b border-gray-200">
+                  <div className="flex items-start gap-2">
+                    <i className="fas fa-comment text-purple-600 mt-1"></i>
+                    <div className="flex-1">
+                      <div className="text-xs text-gray-500 mb-1">コメント</div>
+                      <div className="text-sm text-gray-900 whitespace-pre-wrap break-words">
+                        {selectedPhoto.comment || 'コメントはありません'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div className="flex items-center gap-2">
                     <i className="fas fa-user text-blue-600"></i>
@@ -915,7 +928,8 @@ export const HomePage: React.FC = () => {
                     </div>
                   </div>
                   
-                  <div className="sm:col-span-1 flex gap-2">
+                  {/* ボタンエリア - スマホ対応（縦並び） */}
+                  <div className="sm:col-span-1 flex flex-col sm:flex-row gap-2">
                     {/* 削除リクエストボタン - 控えめなデザイン */}
                     {!isAdmin && (
                       <button
@@ -923,7 +937,7 @@ export const HomePage: React.FC = () => {
                           handleDeleteRequest(selectedPhoto)
                           handleCloseDetail()
                         }}
-                        className="flex-1 px-3 py-2 rounded-lg transition-colors text-xs font-medium border border-gray-300 text-gray-600 hover:bg-gray-50"
+                        className="w-full sm:flex-1 px-3 py-2 rounded-lg transition-colors text-xs font-medium border border-gray-300 text-gray-600 hover:bg-gray-50"
                         title="この画像の削除を管理者にリクエストします"
                       >
                         <i className="fas fa-flag mr-1"></i>
@@ -932,7 +946,7 @@ export const HomePage: React.FC = () => {
                     )}
                     <button
                       onClick={handleCloseDetail}
-                      className={`px-4 py-2 rounded-lg transition-colors text-sm font-medium shadow-md ${!isAdmin ? 'flex-1' : 'w-full'}`}
+                      className={`w-full ${!isAdmin ? 'sm:flex-1' : ''} px-4 py-2 rounded-lg transition-colors text-sm font-medium shadow-md`}
                       style={{ backgroundColor: '#FFD700', color: '#000' }}
                       onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#FFC700'}
                       onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#FFD700'}
@@ -942,20 +956,6 @@ export const HomePage: React.FC = () => {
                     </button>
                   </div>
                 </div>
-                
-                {selectedPhoto.comment && (
-                  <div className="mt-4 pt-4 border-t border-gray-200">
-                    <div className="flex items-start gap-2">
-                      <i className="fas fa-comment text-purple-600 mt-1"></i>
-                      <div className="flex-1">
-                        <div className="text-xs text-gray-500 mb-1">コメント</div>
-                        <div className="text-sm text-gray-900 whitespace-pre-wrap break-words">
-                          {selectedPhoto.comment}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
           </div>

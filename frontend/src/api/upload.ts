@@ -160,7 +160,7 @@ export const uploadImage = async (
       })
       
       // リクエスト設定
-      xhr.timeout = 120000 // 120秒でタイムアウト（大きなファイル対応）
+      xhr.timeout = 180000 // 180秒（3分）でタイムアウト（大きなファイル対応）
       xhr.open('POST', `${apiUrl}/api/upload`)
       xhr.setRequestHeader('Content-Type', 'application/json')
       

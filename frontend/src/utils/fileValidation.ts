@@ -9,7 +9,7 @@ export interface ValidationOptions {
 }
 
 const DEFAULT_OPTIONS: Required<ValidationOptions> = {
-  maxSizeInMB: 10,
+  maxSizeInMB: 7, // Base64エンコード後のサイズを考慮（7MB → 約9.3MB）
   allowedTypes: ['image/*']
 }
 

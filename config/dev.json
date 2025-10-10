@@ -63,7 +63,7 @@
   },
   "cloudFrontDistributionId": "E3C5VWU6YZ9PPK",
   "upload": {
-    "maxFileSize": "10485760",
+    "maxFileSize": "7340032",
     "allowedFileTypes": "image/*",
     "ttlDays": "90"
   },
