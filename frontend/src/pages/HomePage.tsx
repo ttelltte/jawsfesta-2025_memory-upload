@@ -195,14 +195,10 @@ export const HomePage: React.FC = () => {
     setUploadError(null)
 
     try {
-      // 画像圧縮（1MB以上の場合）
+      // 画像圧縮（0.5MB以上の場合）
       let fileToUpload = selectedImage
-      if (shouldCompress(selectedImage, 1)) {
-        fileToUpload = await compressImage(selectedImage, {
-          maxSizeMB: 5, // 5MBまで圧縮
-          maxWidthOrHeight: 3840, // 4K対応
-          quality: 0.85, // バランスの良い品質
-        })
+      if (shouldCompress(selectedImage, 0.5)) {
+        fileToUpload = await compressImage(selectedImage)
       }
 
       const response = await uploadImage(
